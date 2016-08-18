@@ -218,7 +218,6 @@ full_path+'_'+filename+'.swp',
 full_path+'_'+filename+'.swo',
 full_path+filename+'.sav',
 full_path+filename+'.conf',
-
 full_path+filename_without_ext+'%20%28copy%29.'+filename_ext,
 full_path+'Copy%20of%20'+filename,
 full_path+'copy%20of%20'+filename,
@@ -254,9 +253,6 @@ full_path+'.~'+filename,
 full_path+'~%24'+filename
 ]
 
-
-
-
 		backup_testing_level3 = [
 site+file_path+'.tar',
 site+file_path+'.rar',
@@ -270,6 +266,7 @@ full_path+filename_without_ext+'.rar',
 full_path+filename_without_ext+'.zip',
 full_path+filename_without_ext+'.tar.gz'
 ]
+
 		backup_testing_level4 = [
 site+'/.git/HEAD',
 full_path+'.git/HEAD',
@@ -285,6 +282,10 @@ site+'/.svn/entries',
 full_path+'.svn/entries',
 site+'/.svnignore',
 full_path+'.svnignore',
+site+'/CVS/Entries',
+full_path+'CVS/Entries',
+site+'/.cvsignore',
+full_path+'.cvsignore',
 site+'/composer.lock',
 full_path+'composer.lock'
 ]
@@ -400,7 +401,7 @@ full_path+'composer.lock'
 			'Mozilla/5.0 (Windows NT 5.1; U; en) Opera 8.01']
 			chosen_agent = random.choice(agents)
 		else:
-			chosen_agent = 'Mozilla/5.0 (Windows NT 6.2; WOW64; rv:39.0) Gecko/20100101 Firefox/42.0'
+			chosen_agent = 'BFAC '+str(version)+' (https://github.com/mazen160/bfac)' # BFAC DEFAULT UA
 		return chosen_agent
 
 	def requester(link):
@@ -535,3 +536,4 @@ if __name__ == "__main__":
 	except KeyboardInterrupt:
 		print('\nKeyboardInterrupt Detected.');exit('\nExiting...')
 
+### END ###
