@@ -156,17 +156,9 @@ def main():
 
 	def url_handler(url):
 		try:
-			supported_protocols= ['http','https','ftp','ftps','ftpes']
 			default_protocol = 'http'
-			using_supported_protocol = False
-			for _ in supported_protocols:
-				if (url.lower().startswith(_) == True ):
-					using_supported_protocol = True
-					break
-
 			if ( '://' not in url ):
-				if ( using_supported_protocol == False ):
-					url = str(default_protocol)+str('://')+str(url)
+				url = str(default_protocol)+str('://')+str(url)
 
 			scheme = urlparse.urlparse(url).scheme
 			domain = urlparse.urlparse(url).netloc
