@@ -80,11 +80,11 @@ def main():
 	-u URL, --url URL    			Check a single URL.
 	-l LIST, --list LIST 		 	Check a list of URLs.
 	-level LEVEL, --level LEVEL		Set testing level [0-4] (Default: 0).
-	-dvcs-test, --dvcs_test 		Performs only DVCS testing, which is also available by default on Level 4.	
+	-dvcs-test, --dvcs-test 		Performs only DVCS testing, which is also available by default on Level 4.
 	-vsc VALID_STATUS_CODES,		Specify valid status codes for checks, seperated by commas.(Default: 200).
-	--valid-status-codes VALID_STATUS_CODES	
+	--valid-status-codes VALID_STATUS_CODES
 	-isc INVALID_STATUS_CODES, 		Specify invalid status codes for checks, seperated by commas.(Default: 403,404).
-	--invalid-status-codes INVALID_STATUS_CODES	 
+	--invalid-status-codes INVALID_STATUS_CODES
 	-verify-file VERIFY_FILE_AVAILABILITY,  Method to verify the availability of the file. (Options: status_code,content_length,both) (Default: both)
 	--verify-file-availability VERIFY_FILE_AVAILABILITY
 	-xsc EXCLUDE_STATUS_CODES,		Specify status codes to exclude, seperated by commas.
@@ -98,7 +98,7 @@ def main():
 
 	#Handling custom messages
 	if ( not( '--no-text'  in argv) and not( '-no-text' in argv ) ):
-		
+
 		if ( ( '-h' in argv ) or ( '--help' in argv )  or ( len(argv) <= 1 ) or ( '-help' in argv) or ( '--h' in argv)):
 			print(logo(1));instructions()
 			exit()
@@ -117,7 +117,7 @@ def main():
 	parser.add_argument("-verify-file","--verify-file-availability", dest="verify_file_availability",help="Method to verify the availability of the file. (Options: status_code,content_length,both) (Default: both)", action='store',default='both')
 	parser.add_argument("-xsc","--exclude-status-codes", dest="exclude_status_codes",help="Specify status codes to exclude, seperated by commas.", action='store')
 	parser.add_argument("-o","--output", dest='output',help="Save output into a file.", action='store')
-	parser.add_argument("-ra","--random-agent", dest='random_agent',help="Enable random user-agent.", action='store_true')
+	parser.add_argument("-ra","--random-agent","--random-agents", dest='random_agent',help="Enable random user-agent.", action='store_true')
 	parser.add_argument("-no-text","--no-text", dest='notext',help="Prints and writes a clean output with only results.", action='store_true')
 	parser.add_argument("-v","--verbose", dest='verbosity',help="Enable verbosity.", action='store_true')
 	parser.add_argument("-V","--version", dest='version',help="Show current vesion and exit.", action='store_true')
@@ -132,11 +132,11 @@ def main():
 
 	if ( args.usedlist and args.url ):
 		print(tcolor.red+'[!] Error: Both URL and List options are chosen.'+tcolor.endcolor);exit('\nExiting...')
-		
+
 	levels = ['0','1','2','3','4']
 	if (args.level) and (args.level not in levels):
 		print(tcolor.red+'[!]Error: Chosen level is invalid.'+tcolor.endcolor);exit('\nExiting...')
-	
+
 	if (args.level) and (args.dvcs_test):
 		print(tcolor.red+'[!]Error: Only either DVCS Checks or Levels can be Used.\nLevel 4 performs all tests, including DVCS checks.'+tcolor.endcolor);exit('\nExiting...')
 
@@ -147,24 +147,40 @@ def main():
 	args.verify_file_availability = args.verify_file_availability.lower()
 	if ( args.verify_file_availability not in verify_file_availability_options ):
 		print(tcolor.red+'[!]Error: Entered Verify File Availability option is invalid.'+tcolor.endcolor);exit('\nExiting...')
-		
+
 	def url_clean(url):
 		url = url.split('?')[0]
 		url = url.replace('#','%23')
 		url = url.replace(' ','%20')
 		return url
-	
+
 	def url_handler(url):
 		try:
+			supported_protocols= ['http','https','ftp','ftps','ftpes']
+			default_protocol = 'http'
+			using_supported_protocol = False
+			for _ in supported_protocols:
+				if (url.lower().startswith(_) == True ):
+					using_supported_protocol = True
+					break
+
+			if ( '://' not in url ):
+				if ( using_supported_protocol == False ):
+					url = str(default_protocol)+str('://')+str(url)
+
 			scheme = urlparse.urlparse(url).scheme
 			domain = urlparse.urlparse(url).netloc
 			site = scheme+'://'+domain
 			file_path = urlparse.urlparse(url).path
+			if ( file_path == '' ):
+				file_path = '/'
 			try:
 				filename = url.split('/')[-1]
 			except IndexError:
 				filename = ''
 			file_dir = file_path.rstrip(filename)
+			if (file_dir == ''):
+				file_dir = '/'
 			full_path = site+file_dir
 			try:
 				filename_ext = filename.split('.')[1]
@@ -183,7 +199,7 @@ def main():
 
 	def backup_lists(url):
 		scheme,domain,site,file_path,filename,file_dir,full_path, filename_ext, filename_without_ext = url_handler(url)
-		
+
 		backup_testing_level0 = [
 site+file_path+'~',
 site+file_path+'%23',
@@ -194,7 +210,7 @@ full_path+'%23'+filename+'%23',
 site+file_path+'.bak'
 ]
 
-		backup_testing_level1 = [ 
+		backup_testing_level1 = [
 site+file_path+'_',
 site+file_path+'_bak',
 site+file_path+'-bak',
@@ -225,7 +241,7 @@ full_path+filename_without_ext+'%20-%20Copy.'+filename_ext,
 full_path+filename_without_ext+'%20copy.'+filename_ext
 ]
 
-		backup_testing_level2 = [ 
+		backup_testing_level2 = [
 full_path+filename_without_ext+'.txt',
 full_path+filename_without_ext+'.bak',
 full_path+filename_without_ext+'.bkp',
@@ -245,6 +261,7 @@ full_path+filename+'.csproj',
 full_path+filename+'.vb',
 full_path+filename+'.0',
 full_path+filename+'.1',
+full_path+filename+'.2',
 full_path+filename+'.arc',
 full_path+filename+'.inc',
 full_path+filename+'.lst',
@@ -280,6 +297,8 @@ site+'/.hg/requires',
 full_path+'.hg/requires',
 site+'/.svn/entries',
 full_path+'.svn/entries',
+site+'/.svn/all-wcprops',
+full_path+'.svn/all-wcprops',
 site+'/.svnignore',
 full_path+'.svnignore',
 site+'/CVS/Entries',
@@ -289,9 +308,9 @@ full_path+'.cvsignore',
 site+'/composer.lock',
 full_path+'composer.lock'
 ]
-		
+
 		args.level = str(args.level)
-		
+
 		if ( args.level == '0' ):
 			backup_testing_checks = backup_testing_level0
 		if ( args.level == '1' ):
@@ -304,7 +323,7 @@ full_path+'composer.lock'
 			backup_testing_checks = backup_testing_level0+backup_testing_level1+backup_testing_level2+backup_testing_level3+backup_testing_level4
 		if ( args.dvcs_test == True):
 			backup_testing_checks = backup_testing_level4
-			
+
 		backup_testing_checks = list(backup_testing_checks)
 		backup_testing_checks = random.sample(backup_testing_checks, len(backup_testing_checks))
 		return backup_testing_checks
@@ -323,15 +342,15 @@ full_path+'composer.lock'
 			for check_isc_list in isc_list:
 				if str.isdigit(check_isc_list) == False:
 					print(tcolor.red+'[!] Error: Invalid entered status codes.'+tcolor.endcolor);exit('\nExiting...')
-					
+
 		else:
 			isc_list = ['403','404']
 
 		for check_duplicate in vsc_list:
 			if ( check_duplicate in isc_list):
 				print(tcolor.red+'[!] Error: Duplicate values in status codes.'+tcolor.endcolor);exit('\nExiting...')
-				
-	
+
+
 	def initial_request(link):
 		if (args.verify_file_availability != 'status_code'):
 			random_ascii_charset = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -348,12 +367,12 @@ full_path+'composer.lock'
 			response_content_length_initial = '0'
 			response_content_length_initial_min = '0'
 			response_content_length_initial_max	= '0'
-			
-		return request_response_code_initial, response_content_length_initial, response_content_length_initial_min, response_content_length_initial_max	
-	
-	def request_check(request_response_code,request_response_content_length,response_content_length_initial_min, response_content_length_initial_max):				
+
+		return request_response_code_initial, response_content_length_initial, response_content_length_initial_min, response_content_length_initial_max
+
+	def request_check(request_response_code,request_response_content_length,response_content_length_initial_min, response_content_length_initial_max):
 		request_check_status = False
-		
+
 		content_length_test = True
 		if ( args.verify_file_availability != 'status_code' ):
 			for num in range(response_content_length_initial_min,response_content_length_initial_max+1):
@@ -361,23 +380,23 @@ full_path+'composer.lock'
 					content_length_test = False
 
 		if ( args.verify_file_availability == 'both' ):
-			if ( not(str(request_response_code) in status_codes.isc_list)) and (str(request_response_code) in status_codes.vsc_list) or (content_length_test == True): 
+			if ( not(str(request_response_code) in status_codes.isc_list)) and (str(request_response_code) in status_codes.vsc_list) or (content_length_test == True):
 				request_check_status = True
 			else:
 				request_check_status = False
-		
+
 		if ( args.verify_file_availability == 'status_code' ):
 			if ( not(str(request_response_code) in status_codes.isc_list)) and (str(request_response_code) in status_codes.vsc_list):
 				request_check_status = True
 			else:
 				request_check_status = False
-				
+
 		if ( args.verify_file_availability == 'content_length' ):
-			if ( content_length_test == True ): 
+			if ( content_length_test == True ):
 				request_check_status = True
 			else:
 				request_check_status = False
-		
+
 		if (args.exclude_status_codes):
 			exclude_status_codes_list = [xsc_args.strip() for xsc_args in  args.exclude_status_codes.split(',')]
 			request_response_code = str(request_response_code)
@@ -416,11 +435,11 @@ full_path+'composer.lock'
 		except requests.exceptions.ConnectionError:
 			print(tcolor.red+'[!]Connection Error at: '+link+tcolor.endcolor)
 		except requests.exceptions.MissingSchema:
-			print(tcolor.red+'[!]Error: Invalid URL - Missing Schema at: '+link+tcolor.endcolor);exit('\nExiting...')
+			print(tcolor.red+'[!]Error: Invalid URL - Missing Schema at: '+link+tcolor.endcolor)
 		except requests.exceptions.InvalidSchema:
-			print(tcolor.red+'[!]Error: Invalid URL - Invalid Schema at: '+link+tcolor.endcolor);exit('\nExiting...')
+			print(tcolor.red+'[!]Error: Invalid URL - Invalid Schema at: '+link+tcolor.endcolor)
 		except requests.exceptions.InvalidURL:
-			print(tcolor.red+'[!]Error: Invalid URL at: '+link+tcolor.endcolor);exit('\nExiting...')
+			print(tcolor.red+'[!]Error: Invalid URL at: '+link+tcolor.endcolor)
 
 	def disable_ssl_errors():
 		#Disabling unwanted SSL errors
@@ -428,7 +447,7 @@ full_path+'composer.lock'
 			requests.packages.urllib3.disable_warnings()
 		except AttributeError:
 			pass #Commented out to avoid the annoyance of showing the message in every execution of the script. #print(tcolor.red+'[!]requests.packages.urllib3.disable_warnings() does not seem to be working. Bogus errors may be shown during the usage of the tool.'+tcolor.endcolor)
-		
+
 	def output0(data):
 		try:
 			if not(args.notext):
@@ -457,7 +476,7 @@ full_path+'composer.lock'
 		except TypeError:
 			print(tcolor.red+'[!] Error: There was an error in writing into the specified location.'+tcolor.endcolor);exit('\nExiting...')
 
-	
+
 	if args.output:
 		output0(logo(0))
 
@@ -477,21 +496,21 @@ full_path+'composer.lock'
 			print(verbose_message)
 			if args.output:
 				output1(verbose_message,1)
-	
+
 	def valid_check_handler(link,request_response_code,request_response_content_length):
 		message = '[$] Discovered: -> '+'{'+link+'}'+' '+'(Response-Code: '+str(request_response_code)+' | Content-Length: '+str(request_response_content_length)+')'
 		if args.output:
 			output1(message,1)
 		print(tcolor.green+message+tcolor.endcolor)
-	
+
 	def notext_valid_check_handler(link):
 		message = link
 		if args.output:
 			output1(message,1)
 		print(message)
-				
+
 	disable_ssl_errors()
-	
+
 	def test_url(url):
 		try:
 			request_response_code_initial, response_content_length_initial, response_content_length_initial_min, response_content_length_initial_max = initial_request(url)
@@ -514,19 +533,20 @@ full_path+'composer.lock'
 						notext_valid_check_handler(link)
 			except TypeError:
 				pass
-					
+
 	def test_list(testing_input_list):
 		testing_list = open(testing_input_list).readlines()
 		for url in testing_list:
 			url = url.rstrip('\n')
+			url = url.rstrip('\r')
 			test_url(url)
-	
-					
+
+
 	if (args.url):
 		test_url(args.url)
 	if (args.usedlist):
 		test_list(args.usedlist)
-	
+
 	if not(args.notext):
 		print(tcolor.purple+'\n\n[*%*]Finished.'+tcolor.endcolor)
 
