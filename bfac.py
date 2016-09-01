@@ -297,6 +297,12 @@ site+'/CVS/Entries',
 full_path+'CVS/Entries',
 site+'/.cvsignore',
 full_path+'.cvsignore',
+site+'/.idea/misc.xml',
+full_path+'.idea/misc.xml',
+site+'/.idea/workspace.xml',
+full_path+'.idea/workspace.xml',
+site+'/.DS_Store',
+full_path+'.DS_Store',
 site+'/composer.lock',
 full_path+'composer.lock'
 ]
