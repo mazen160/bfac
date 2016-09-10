@@ -28,7 +28,7 @@ def main():
 		print('[!] Error: requests module does not seem to be installed.')
 		print('Use the following command to install requests module.')
 		if ( version_info[0] == 2):
-			print('$ pip install requests')
+			print('$ pip install requests');exit('\nExiting...')
 		else:
 			print('$ pip3 install requests');exit('\nExiting...')
 
@@ -170,7 +170,7 @@ def main():
 				filename = url.split('/')[-1]
 			except IndexError:
 				filename = ''
-			file_dir = file_path.rstrip(filename)
+			file_dir = file_path.replace(filename,'')
 			if (file_dir == ''):
 				file_dir = '/'
 			full_path = site+file_dir
