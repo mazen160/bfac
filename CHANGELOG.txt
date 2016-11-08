@@ -10,6 +10,38 @@
 
 
 
-###Changelog:-
+### Changelog:-
+
+* v1.1:
+	Additions/Features:-
+		[+] Official BFAC User-Agent - Thanks Christian Folini (@ChrFolini)
+		[+] Additional BFA patterns.
+		[+] Better way of parsing URLs - Thanks Omar Kurt (@omarkurt) 
+		[+] --dvcs-test flag to only check for exposed DVCS repositories, (DVCS tests is done by default when using BFAC on level 4, now you can run it seperately).
+		[+] --api flag to return findings in JSON form.
+		[+] --timeout option to control the timeout.
+		[+] --proxy flag to issue requests via proxies when testing.
+		[+] --proxy-cred to be used with --proxy flag for handling proxy credintials.
+		[+] --user-agent, -ua to specify your own user-agent, (--random-agent is available since v1.0).
+		[+] --cookie flag to specify arbitray HTTP Cookie header.
+		[+] --host flag to specify arbitray HTTP Host header.
+		[+] --invalid-content-length flag:
+				When verifying the existence of files, BFAC by default send an initial request to determine the content-length
+				and to build an idea about the invalid (not found) pages. This flag can be used to disable the automatic process
+				of sending an initial request and manually specifying a content-length of an invalid page. It's an optional flag
+				that can be used when facing false-positives, tests shows it rarely need this option, but it would be good to have
+				it since BFAC aims to be an "All-in-One" tool for testing backup-file artifacts.
+		[+] --content-length-range flag:
+				This option can be used to optmise the range of the invalid pages based on the content-length.
+				It's an optional flag, and the reason this flag is added is as same as --invalid-content-length flag.
+		[+] New --help design.
+	
+	Fixed Bugs:-
+		[*] Fixed a bug in url_handler().
+		[*] Better support for Windows machines.
+		[*] Fixed a bug that can have same check in a test done more than one time. Now it only does the same check  once.
+	
+	Known Bugs/Issues:-
+		None
 
 * v1.0: Initial release.

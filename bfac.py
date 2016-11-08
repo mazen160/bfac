@@ -4,7 +4,7 @@
 ###Description:
 #An automated tool that checks for backup artifacts that may discloses the web-application's source code.
 ###Version:
-#v1.0
+#v1.1
 ###Homepage:
 #https://github.com/mazen160/bfac
 ##Author:
@@ -13,7 +13,7 @@
 
 def main():
 
-	version='v1.0'
+	version='v1.1'
 
 	from sys import argv,version_info,stdout
 	import random
@@ -28,7 +28,7 @@ def main():
 		print('[!] Error: requests module does not seem to be installed.')
 		print('Use the following command to install requests module.')
 		if ( version_info[0] == 2):
-			print('$ pip install requests');exit('\nExiting...')
+			print('$ pip install requests')
 		else:
 			print('$ pip3 install requests');exit('\nExiting...')
 
@@ -76,28 +76,75 @@ def main():
 	def instructions():
 		print("""
 		Arguments:-
-	-h, --help           			Show this help message and exit.
-	-u URL, --url URL    			Check a single URL.
-	-l LIST, --list LIST 		 	Check a list of URLs.
-	-level LEVEL, --level LEVEL		Set testing level [0-4] (Default: 0).
+
+	* Target Options
+	-u, --url URL    			Check a single URL.
+
+	-l, --list LIST 		 	Check a list of URLs.
+
+
+	* Testing Options
+	-level, --level LEVEL			Set testing level [0-4] (Default: 0).
+
 	-dvcs-test, --dvcs-test 		Performs only DVCS testing, which is also available by default on Level 4.
-	-vsc VALID_STATUS_CODES,		Specify valid status codes for checks, seperated by commas.(Default: 200).
-	--valid-status-codes VALID_STATUS_CODES
-	-isc INVALID_STATUS_CODES, 		Specify invalid status codes for checks, seperated by commas.(Default: 403,404).
-	--invalid-status-codes INVALID_STATUS_CODES
-	-verify-file VERIFY_FILE_AVAILABILITY,  Method to verify the availability of the file. (Options: status_code,content_length,both) (Default: both)
-	--verify-file-availability VERIFY_FILE_AVAILABILITY
-	-xsc EXCLUDE_STATUS_CODES,		Specify status codes to exclude, seperated by commas.
-	--exclude-status-codes EXCLUDE_STATUS_CODES
-	-ra, --random-agent   			Enable random user-agent.
+
+
+	* Artifacts Detection Options
+	-vsc, --valid-status-codes VALID_STATUS_CODES
+						Specify valid status codes for checks, seperated by commas.(Default: 200).
+
+	-isc, --invalid-status-codes INVALID_STATUS_CODES
+						Specify invalid status codes for checks, seperated by commas.(Default: 403,404).
+
+	-icl, --invalid-content-length INVALID_CONTENT_LENGTH
+						Manually specify the invalid Content-Length, instead of performing this check automatically.
+
+	-content-length-range, --content-length-range CONTENT_LENGTH_RANGE
+						Manually specify the Content-Length range for invalid pages. (Default: 50)
+
+	-verify-file , --verify-file-availability VERIFY_FILE_AVAILABILITY
+						Method to verify the availability of the file. (Options: status_code,content_length,both) (Default: both)
+
+	-xsc, --exclude-status-codes EXCLUDE_STATUS_CODES	
+						Specify status codes to exclude, seperated by commas.
+
+
+	* Requests-Related Options
+	-ua, --user-agent USER_AGENT		HTTP User-Agent header value.
+	
+	-ra, --random-agent   			Use random User-Agents.
+	
+	--cookie COOKIE				HTTP Cookie header value.
+	
+	--host HOST				HTTP Host header value.
+	
+	--headers HEADERS			Extra headers (e.g. "Accept-Language: fr\\nETag: 123")
+	
+	--proxy PROXY				Use a proxy on testing.
+	
+	--proxy-cred PROXY_CRED			Proxy authentication credentials (name:password)
+	
+	--timeout TIMEOUT			HTTP Request timeout by seconds. (Default: 5)
+
+
+	* Output-Related Options
+	-o, --output OUTPUT			Save output into a file.
+
+
+	* Other Options
+	-h, --help           			Show this help message and exit.
+
 	-no-text, --no-text 			Prints and writes a clean output with only results.
+	
+	--api					Shows findings in a form of list, suitable for APIs.
+
 	-v, --verbose        			Enable verbosity.
-	-o OUTPUT, --output OUTPUT		Save output into a file.
+
 	-V, --version				Show current vesion and exit.
 	""")
 
 	#Handling custom messages
-	if ( not( '--no-text'  in argv) and not( '-no-text' in argv ) ):
+	if ( not( '--no-text'  in argv) and not( '-no-text' in argv ) and not('-api' in argv) and not('--api' in argv)):
 
 		if ( ( '-h' in argv ) or ( '--help' in argv )  or ( len(argv) <= 1 ) or ( '-help' in argv) or ( '--h' in argv)):
 			print(logo(1));instructions()
@@ -108,19 +155,37 @@ def main():
 
 	##Handling arguments
 	parser = argparse.ArgumentParser()
+	#Target Options
 	parser.add_argument("-u","--url", dest="url",help="Check a single URL.", action='store')
 	parser.add_argument("-l","--list", dest="usedlist",help="Check a list of URLs.", action='store')
+	#Testing Options
 	parser.add_argument("-level","--level", dest="level",help="Set testing level [0-4](Default: 0).", action='store')
 	parser.add_argument("-dvcs-test","--dvcs-test", dest="dvcs_test",help="Performs only testing for DVCS, which is available by default on Level 4.", action='store_true')
+	#Artifacts Detection Options
 	parser.add_argument("-vsc","--valid-status-codes", dest="valid_status_codes",help="Specify valid status codes for checks, seperated by commas.(Default: 200).", action='store')
-	parser.add_argument("-isc","--invalid-status-codes", dest="invalid_status_codes",help="Specify invalid status codes for checks, seperated by commas.(Default: 403,404).", action='store')
+	parser.add_argument("-isc","--invalid-status-codes", dest="invalid_status_codes",help="Specify invalid status codes for checks, seperated by commas. (Default: 403,404)", action='store')
+	parser.add_argument("-icl","--invalid-content-length", dest="invalid_content_length",help="Manually specify the invalid Content-Length, instead of performing this check automatically.", action='store')
+	parser.add_argument("-content-length-range","--content-length-range", dest="content_length_range",help="Manually specify the Content-Length range for invalid pages. (Default: 50)", action='store',default=50)
 	parser.add_argument("-verify-file","--verify-file-availability", dest="verify_file_availability",help="Method to verify the availability of the file. (Options: status_code,content_length,both) (Default: both)", action='store',default='both')
+	#Output-Related Options
 	parser.add_argument("-xsc","--exclude-status-codes", dest="exclude_status_codes",help="Specify status codes to exclude, seperated by commas.", action='store')
 	parser.add_argument("-o","--output", dest='output',help="Save output into a file.", action='store')
-	parser.add_argument("-ra","--random-agent","--random-agents", dest='random_agent',help="Enable random user-agent.", action='store_true')
+	#Request-Related Options
+	parser.add_argument("--ua", "--user-agent", dest='user_agent',help="HTTP User-Agent header value.", action='store')
+	parser.add_argument("-ra","--random-agent","--random-agents", dest='random_agent',help="Use random User-Agents.", action='store_true')
+	parser.add_argument("--cookie", dest='cookie',help="HTTP Cookie header value.", action='store')
+	parser.add_argument("--host", dest='host',help="HTTP Host header value.", action='store')
+	parser.add_argument("--headers", dest='headers',help="Extra headers (e.g. \"Accept-Language: fr\\nETag: 123\")", action='store')
+	parser.add_argument("--proxy", dest='proxy', help="Use a proxy on testing.", action='store')
+	parser.add_argument("--proxy-cred", dest='proxy_cred',help="Proxy authentication credentials (name:password)", action='store')
+	parser.add_argument("--timeout", dest='timeout',help="HTTP Request timeout by seconds. (Default: 5)", action='store',default=5)
+
+	#Other Options
 	parser.add_argument("-no-text","--no-text", dest='notext',help="Prints and writes a clean output with only results.", action='store_true')
+	parser.add_argument("-api","--api",dest='api',help="Showing findings in a form of list, suitable for APIs.",action="store_true")
 	parser.add_argument("-v","--verbose", dest='verbosity',help="Enable verbosity.", action='store_true')
 	parser.add_argument("-V","--version", dest='version',help="Show current vesion and exit.", action='store_true')
+
 	args = parser.parse_args()
 
 	if ( args.version ):
@@ -142,6 +207,9 @@ def main():
 
 	if (not(args.dvcs_test)) and (not(args.level)):
 		args.level = 0 # Setting Default level to 0
+
+	#Tested Jar, to not perform the same test mistakenly again. # Before testing, test_url() will check if it was tested before or not.
+	testedjar = []
 
 	verify_file_availability_options = ['status_code','content_length','both']
 	args.verify_file_availability = args.verify_file_availability.lower()
@@ -170,7 +238,7 @@ def main():
 				filename = url.split('/')[-1]
 			except IndexError:
 				filename = ''
-			file_dir = file_path.replace(filename,'')
+			file_dir = file_path.rstrip(filename)
 			if (file_dir == ''):
 				file_dir = '/'
 			full_path = site+file_dir
@@ -229,6 +297,11 @@ full_path+filename+'.conf',
 full_path+filename_without_ext+'%20%28copy%29.'+filename_ext,
 full_path+'Copy%20of%20'+filename,
 full_path+'copy%20of%20'+filename,
+full_path+'Copy_'+filename,
+full_path+'Copy%20'+filename,
+full_path+'Copy_of_'+filename,
+full_path+'Copy_(1)_of_'+filename,
+full_path+'Copy_(2)_of_'+filename,
 full_path+filename_without_ext+'%20-%20Copy.'+filename_ext,
 full_path+filename_without_ext+'%20copy.'+filename_ext
 ]
@@ -247,6 +320,16 @@ full_path+'~'+filename,
 full_path+filename_without_ext+'.tpl',
 full_path+filename_without_ext+'.tmp',
 full_path+filename_without_ext+'.temp',
+full_path+filename+'.saved',
+full_path+filename+'.back',
+full_path+filename+'.bck',
+full_path+filename+'.bakup',
+full_path+filename_without_ext+'.saved',
+full_path+filename_without_ext+'.back',
+full_path+filename_without_ext+'.bck',
+full_path+filename_without_ext+'.bakup',
+full_path+'_'+filename,
+full_path+'%20'+filename,
 full_path+filename+'.nsx',
 full_path+filename+'.cs',
 full_path+filename+'.csproj',
@@ -266,6 +349,7 @@ full_path+'~%24'+filename
 site+file_path+'.tar',
 site+file_path+'.rar',
 site+file_path+'.zip',
+full_path+'~'+filename_without_ext+'.tmp',
 site+file_path+'.tar.gz',
 full_path+'backup-'+filename,
 full_path+filename_without_ext+'-backup.'+filename_ext,
@@ -351,13 +435,17 @@ full_path+'composer.lock'
 
 	def initial_request(link):
 		if (args.verify_file_availability != 'status_code'):
-			random_ascii_charset = 'abcdefghijklmnopqrstuvwxyz0123456789'
-			random_value = ''.join(random.choice(random_ascii_charset) for _ in range(5))
-			random_value_ext = ''.join(random.choice(random_ascii_charset) for _ in range(3))
-			link = url_handler(link)[2]+url_handler(link)[5]+random_value+'.'+random_value_ext
-			request_response_code_initial, response_content_length_initial = requester(link)
-			default_content_length_range = 50 #CHANGE THE CONTENT-LENGTH RANGE ON THIS LINE IN CASE OF FACING A FALSE-POSITIVE ISSUE
-			default_content_length_range = int(default_content_length_range)
+			if (args.invalid_content_length):
+				request_response_code_initial = '200'
+				response_content_length_initial = int(args.invalid_content_length)
+			else:
+				random_ascii_charset = 'abcdefghijklmnopqrstuvwxyz0123456789'
+				random_value = ''.join(random.choice(random_ascii_charset) for _ in range(5))
+				random_value_ext = ''.join(random.choice(random_ascii_charset) for _ in range(3))
+				link = url_handler(link)[2]+url_handler(link)[5]+random_value+'.'+random_value_ext
+				request_response_code_initial, response_content_length_initial = requester(link)
+
+			default_content_length_range = int(args.content_length_range)
 			response_content_length_initial_min = response_content_length_initial-default_content_length_range
 			response_content_length_initial_max = response_content_length_initial+default_content_length_range
 		else:
@@ -424,7 +512,55 @@ full_path+'composer.lock'
 	def requester(link):
 		try:
 			headers = { 'User-Agent': choose_agent(),'Accept': '*/*'}
-			req = requests.get(link, headers=headers, verify=False, allow_redirects=False)
+
+			if (args.user_agent):
+				user_agent_dict = {'User-Agent': str(args.user_agent)}
+				headers.update(user_agent_dict)
+
+			if (args.cookie):
+				cookie_dict = {'Cookie': str(args.cookie)}
+				headers.update(cookie_dict)
+
+			if (args.host):
+				host_dict = {'Host': str(args.host)}
+				headers.update(host_dict)
+
+
+			if (args.headers):
+				extra_headers_handler = args.headers.replace('\r','').split('\\n')
+				for _ in extra_headers_handler:
+					if (len(_.split(':')) != 2):
+						pass
+					else:
+						header = _.split(':')[0]
+						header_value =  _.split(':')[1]
+
+						header_value = list(header_value) # Need to check if first element is \x020 because of an error shown when requesting
+						if (header_value[0] == ' '):
+							header_value[0] = ''
+						header_value = ''.join(header_value)
+
+						add_header = {str(header):str(header_value)}
+						headers.update(add_header)
+
+			if (args.proxy):
+				args.proxy = str(args.proxy)
+				proxy_scheme = 'http'
+				proxy_scheme = args.proxy.split(':')[0].lower()
+				if (args.proxy_cred):
+					username = str(str(args.proxy_cred).split(':')[0])
+					password = str(str(args.proxy_cred).split(':')[1])
+					replace_original_start_with = str(proxy_scheme)+'://'+str(username)+':'+str(password)+str('@')
+					proxy_url = args.proxy.replace(str(proxy_scheme)+'://',replace_original_start_with)
+				else:
+					proxy_url = str(args.proxy)
+				proxy_dict = { str(proxy_scheme): str(proxy_url) }
+
+				req = requests.get(link, headers=headers, verify=False, allow_redirects=False, timeout=int(args.timeout), proxies=proxy_dict)
+			else:
+				req = requests.get(link, headers=headers, verify=False, allow_redirects=False)
+
+			req = requests.get(link, headers=headers, verify=False, allow_redirects=False, timeout=int(args.timeout))
 			request_response_code = req.status_code
 			request_response_content_length = len(req.content)
 			return request_response_code, request_response_content_length
@@ -438,7 +574,8 @@ full_path+'composer.lock'
 			print(tcolor.red+'[!]Error: Invalid URL - Invalid Schema at: '+link+tcolor.endcolor)
 		except requests.exceptions.InvalidURL:
 			print(tcolor.red+'[!]Error: Invalid URL at: '+link+tcolor.endcolor)
-
+		except requests.exceptions.ReadTimeout:
+			print(tcolor.red+'[!]Error: Connection Timeout at: '+link+tcolor.endcolor)
 	def disable_ssl_errors():
 		#Disabling unwanted SSL errors
 		try:
@@ -448,7 +585,7 @@ full_path+'composer.lock'
 
 	def output0(data):
 		try:
-			if not(args.notext):
+			if not(args.notext) or not(args.api):
 				if args.output:
 					filename = args.output
 					output =  open(filename,'a')
@@ -475,8 +612,11 @@ full_path+'composer.lock'
 			print(tcolor.red+'[!] Error: There was an error in writing into the specified location.'+tcolor.endcolor);exit('\nExiting...')
 
 
-	if args.output:
+	if args.output and not(args.notext) and not(args.api):
 		output0(logo(0))
+		
+
+	findings_list = []
 
 	def verbose_checks_handler(link,verbose_option,request_response_code,request_response_content_length):
 		if ( verbose_option == 'testing_path'):
@@ -517,18 +657,22 @@ full_path+'composer.lock'
 		for link in backup_lists(url):
 			try:
 				link = url_clean(link)
-				if not(args.notext):
-					if args.verbosity:
-						verbose_checks_handler(link,'testing_path',0,0)
-				request_response_code, request_response_content_length = requester(link)
-				if not(args.notext):
-					if args.verbosity:
-						verbose_checks_handler(link,'response',request_response_code,request_response_content_length)
-				if ( request_check(request_response_code,request_response_content_length,response_content_length_initial_min, response_content_length_initial_max) == True ):
-					if not(args.notext):
-						valid_check_handler(link,request_response_code,request_response_content_length)
-					if (args.notext):
-						notext_valid_check_handler(link)
+				if ( str(link) not in testedjar ):
+					if not(args.notext) and not(args.api):
+						if args.verbosity:
+							verbose_checks_handler(link,'testing_path',0,0)
+					request_response_code, request_response_content_length = requester(link)
+					if not(args.notext) and not(args.api):
+						if args.verbosity:
+							verbose_checks_handler(link,'response',request_response_code,request_response_content_length)
+					if ( request_check(request_response_code,request_response_content_length,response_content_length_initial_min, response_content_length_initial_max) == True ):
+						if not(args.notext) and not(args.api):
+							valid_check_handler(link,request_response_code,request_response_content_length)
+						if (args.notext):
+							notext_valid_check_handler(link)
+						#in args.api, the output will be at the end of the test.
+						findings_list.append(link)
+					testedjar.append(str(link))
 			except TypeError:
 				pass
 
@@ -544,9 +688,17 @@ full_path+'composer.lock'
 		test_url(args.url)
 	if (args.usedlist):
 		test_list(args.usedlist)
+	if (args.api):
+		print(str(findings_list).replace("'",'"')) # Replacing single-quotes with double-quote to follow  RFC-4627
+	
+	if not(args.api) and not(args.notext) and (len(findings_list) > 0):
+		print('\n\n')
+		print(tcolor.light_blue+'    [^%^] Findings:-'+tcolor.endcolor)
+		for _ in findings_list:
+			print(str(_))
 
-	if not(args.notext):
-		print(tcolor.purple+'\n\n[*%*]Finished.'+tcolor.endcolor)
+	if not(args.notext) and not(args.api):
+		print(tcolor.purple+'\n\n[*%*] Finished.'+tcolor.endcolor)
 
 if __name__ == "__main__":
 	try:
