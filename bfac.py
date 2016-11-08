@@ -535,7 +535,7 @@ full_path+'composer.lock'
 						header = _.split(':')[0]
 						header_value =  _.split(':')[1]
 
-						header_value = list(header_value) # Need to check if first element is \x020 because of an error shown when requesting
+						header_value = list(header_value) # Need to check if first element is \x20 because of an error shown when requesting
 						if (header_value[0] == ' '):
 							header_value[0] = ''
 						header_value = ''.join(header_value)

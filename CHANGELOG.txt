@@ -25,6 +25,7 @@
 		[+] --user-agent, -ua to specify your own user-agent, (--random-agent is available since v1.0).
 		[+] --cookie flag to specify arbitray HTTP Cookie header.
 		[+] --host flag to specify arbitray HTTP Host header.
+		[+] --headers flag to add arbitrary HTTP headers in requests.
 		[+] --invalid-content-length flag:
 				When verifying the existence of files, BFAC by default send an initial request to determine the content-length
 				and to build an idea about the invalid (not found) pages. This flag can be used to disable the automatic process
