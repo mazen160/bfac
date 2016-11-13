@@ -398,6 +398,9 @@ full_path+'composer.lock',
 site+'/Backup',
 full_path+'Backup',
 site+'/db',
+full_path+'db',
+site+'/_backups',
+full_path+'_backups'
 ]
 
 		args.level = str(args.level)
