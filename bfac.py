@@ -394,7 +394,10 @@ full_path+'.idea/workspace.xml',
 site+'/.DS_Store',
 full_path+'.DS_Store',
 site+'/composer.lock',
-full_path+'composer.lock'
+full_path+'composer.lock',
+site+'/Backup',
+full_path+'Backup',
+site+'/db',
 ]
 
 		args.level = str(args.level)
