@@ -357,7 +357,8 @@ full_path+filename_without_ext+'-bkp.'+filename_ext,
 full_path+filename_without_ext+'.tar',
 full_path+filename_without_ext+'.rar',
 full_path+filename_without_ext+'.zip',
-full_path+filename_without_ext+'.tar.gz'
+full_path+filename_without_ext+'.tar.gz',
+full_path+filename_without_ext+'.sql.gz'
 ]
 
 		backup_testing_level4 = [
