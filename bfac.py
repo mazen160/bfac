@@ -314,6 +314,7 @@ full_path+filename_without_ext+'.save',
 full_path+filename_without_ext+'.old',
 full_path+filename_without_ext+'.orig',
 full_path+filename_without_ext+'.original',
+full_path+filename_without_ext+'.sql',
 site+file_path+'%00',
 site+file_path+'%01',
 full_path+'~'+filename,
@@ -357,7 +358,12 @@ full_path+filename_without_ext+'-bkp.'+filename_ext,
 full_path+filename_without_ext+'.tar',
 full_path+filename_without_ext+'.rar',
 full_path+filename_without_ext+'.zip',
-full_path+filename_without_ext+'.tar.gz'
+full_path+filename_without_ext+'.tar.gz',
+full_path+filename_without_ext+'.sql.gz',
+full_path+filename_without_ext+'.bak.sql',
+full_path+filename_without_ext+'.bak.sql.gz',
+full_path+filename_without_ext+'.bak.sql.bz2',
+full_path+filename_without_ext+'.bak.sql.tar.gz'
 ]
 
 		backup_testing_level4 = [
