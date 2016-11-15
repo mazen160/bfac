@@ -695,7 +695,7 @@ full_path+'composer.lock'
 	if (args.usedlist):
 		test_list(args.usedlist)
 	if (args.api):
-		print(str(findings_list).replace("'",'"')) # Replacing single-quotes with double-quote to follow  RFC-4627
+		print(str(findings_list).replace('"','\\"').replace("'",'"')) # Replacing single-quotes with double-quote to follow  RFC-4627
 	
 	if not(args.api) and not(args.notext) and (len(findings_list) > 0):
 		print('\n\n')
