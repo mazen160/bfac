@@ -17,7 +17,7 @@
 		[+] Official BFAC User-Agent - Thanks Christian Folini (@ChrFolini)
 		[+] Additional BFA patterns.
 		[+] Better way of parsing URLs - Thanks Omar Kurt (@omarkurt) 
-		[+] --dvcs-test flag to only check for exposed DVCS repositories, (DVCS tests is done by default when using BFAC on level 4, now you can run it seperately).
+		[+] --dvcs-test flag to only check for exposed DVCS repositories, (DVCS tests are done by default when using BFAC on level 4, now you can run it seperately).
 		[+] --api flag to return findings in JSON form.
 		[+] --timeout option to control the timeout.
 		[+] --proxy flag to issue requests via proxies when testing.

@@ -45,12 +45,16 @@ BFAC (Backup File Artifacts Checker) is an automated tool that checks for backup
 ##Checking a single URL and showing only the results##
 ``bfac --no-text --url http://example.com/test.php``
 
+##Limit the test to exposed DVCS tests##
+`bfac --dvcs-test --url http://example.com/`
+
+
 #**Requirements**#
 * Python2 or Python3
 * requests
 
-#**Installation (for *NIX machines) [Optional]**#
-``sudo python install.py confirm``
+#**Installation [Optional]**#
+``sudo python setup.py install``
 
 #**Compatibility**#
 The project currently supports all platforms that runs Python.
