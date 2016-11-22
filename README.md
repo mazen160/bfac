@@ -1,7 +1,7 @@
 *BFAC*
 ---
 
-An automated tool that checks for backup artifacts that may discloses the web-application's source code.
+An automated tool that checks for backup artifacts that may disclose the web-application's source code.
 
 ~~~
 
