@@ -1,4 +1,13 @@
-from setuptools import setup, Extension
+#!/usr/bin/env python
+############################################################################################################
+##BFAC: Backup File Artifacts Checker
+###Homepage:
+#https://github.com/mazen160/bfac
+##setup.py: BFAC setup script
+###
+##Author:
+#Mazin Ahmed <Mazin AT MazinAhmed DOT net>
+############################################################################################################from setuptools import setup, Extension
 
 setup(
   name = 'bfac',
