@@ -1,16 +1,29 @@
-############################################################################################################
-##BFAC: Backup File Artifacts Checker
-###Description:
-#An automated tool that checks for backup artifacts that may discloses the web-application's source code.
-###Homepage:
-#https://github.com/mazen160/bfac
-###Author:
-#Mazin Ahmed <Mazin AT MazinAhmed DOT net>
-############################################################################################################
-
+# *******************************************************************
+# *** BFAC: Backup File Artifacts Checker ***
+# * Description:
+#   An automated tool that checks for backup artifacts
+#   that may disclose the web-application's source code.
+# * Homepage:
+#   https://github.com/mazen160/bfac
+# * Author:
+#   Mazin Ahmed <Mazin AT MazinAhmed DOT net>
+# *******************************************************************
 
 
 ### Changelog:-
+
+* v1.2:
+	Additions/Features:-
+        [+] Complete code-rewrite of BFAC.
+        [+] BFAC now can works as module.
+	[+] Additional BFA patterns.
+
+	Fixed Bugs:-
+        [*] Improved url_handler() way of handling URLs.
+        [*] Fixed UI/UX issues.
+
+    Known Bugs/Issues:-
+        None
 
 * v1.1:
 	Additions/Features:-
