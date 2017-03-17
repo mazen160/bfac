@@ -1,0 +1,20 @@
+# *******************************************************************
+# *** BFAC: Backup File Artifacts Checker ***
+# * Description:
+#   An automated tool that checks for backup artifacts
+#   that may disclose the web-application's source code.
+# * Homepage:
+#   https://github.com/mazen160/bfac
+# * Author:
+#   Mazin Ahmed <Mazin AT MazinAhmed DOT net>
+# *******************************************************************
+
+
+Contributors (alphabetical-order):-
+
+* Christian Folini (@ChrFolini)
+* Ed (@EdOverflow)
+* Omar Kurt (@omarkurt)
+ 
+
+Thank you for making BFAC a better project for everyone!
