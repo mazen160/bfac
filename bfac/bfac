@@ -812,7 +812,7 @@ def Generate_BFA_URLs(url,
         full_path + '.git/config',
         site + '/.gitignore',
         full_path + '.gitignore',
-        site + '.git-credentials',
+        site + '/.git-credentials',
         full_path + '.git-credentials',
         site + '/.bzr/README',
         full_path + '.bzr/README',
@@ -1049,6 +1049,9 @@ class Verify_Response():
         * Returns int > 0 if there is any sort of exception.
         """
         content_length_test = True
+        if (content_length is None):
+            content_length_test = False
+            return(content_length_test)
         if ((initial_content_length_min is None) or
            (initial_content_length_max is None)):
                 return(3)
