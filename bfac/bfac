@@ -1402,7 +1402,7 @@ def Test_URL(url,
                (notext is not True) and
                (__name__ == '__main__')):
                 print('[!] Host ' +
-                      '[%s]' % (urlparse.urlparse(url).netloc) +
+                      '[%s]' % (URL_Work().url_handler(url)[1]) +
                       ' does not seem to respond as expected.')
                 print('Skipping...')
             return(9)
