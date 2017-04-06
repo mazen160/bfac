@@ -1472,6 +1472,7 @@ def Test_URL(url,
     if (api is True):
         print(str(findings_list).replace('"', '\\"').replace("'", '"'))
 
+
 # Prints version when requested (command-line use)
 if (__name__ == '__main__'):
     if show_version:
