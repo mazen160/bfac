@@ -14,7 +14,7 @@
 # *******************************************************************
 
 # Modules
-from sys import argv, version_info
+from sys import argv, version_info, stdin
 import random
 import argparse
 try:
@@ -117,6 +117,7 @@ def instructions():
     * Target Options
 -u, --url URL               Check a single URL.
 -l, --list LIST             Check a list of URLs.
+--stdin                     Checks URLs from STDIN input.
 
     * Testing Options
 -level, --level LEVEL       Set testing level [0-4] (Default: 4).
@@ -201,6 +202,10 @@ if (__name__ == '__main__'):
                         dest="usedlist",
                         help="Check a list of URLs.",
                         action='store')
+    parser.add_argument("--stdin",
+                        dest="use_stdin",
+                        help="Checks URLs from STDIN input.",
+                        action='store_true')
     # Testing Options
     parser.add_argument("-level", "--level",
                         dest="testing_level",
@@ -332,6 +337,7 @@ if (__name__ == '__main__'):
     # Handling input from argparse (Command-line use).
     url = args.url if args.url else None
     usedlist = args.usedlist if args.usedlist else None
+    use_stdin = args.use_stdin if args.use_stdin else None
     testing_level = args.testing_level if args.testing_level else None
     dvcs_test = args.dvcs_test if args.dvcs_test else None
 
@@ -1438,7 +1444,8 @@ def Test_URL(url,
                                                     result[1][1])
         testedjar.append(url)
         if (result[0] is True):
-            findings_list.append(url)
+            if result[0] not in findings_list:
+                findings_list.append(url)
             if (api is not True) and (notext is not True):
                 ConsoleOutput().Found_Message(url,
                                               result[1][0],
@@ -1474,14 +1481,14 @@ if (__name__ == '__main__'):
 # Checking inputs when using via command-line.
 if (__name__ == '__main__'):
     # Check if URL or List Input is used (command-line use)
-    if (url is None) and (usedlist is None):
+    if ((url is None) and (usedlist is None) and (use_stdin is None)):
         e = '[!] Error: Either URL or List should be supplied.'
         print(tcolor.red + str(e) + tcolor.endcolor)
         print('\nExiting...')
         exit(1)
 
     # Check if both URL and List Input is used (command-line use)
-    if (url is None) and (usedlist is None):
+    if (url is not None) and (usedlist is not None):
         e = '[!] Error: Both URL and List are supplied.'
         print(tcolor.red + str(e) + tcolor.endcolor)
         print('\nExiting...')
@@ -1647,9 +1654,16 @@ if (__name__ == '__main__'):
             print('\nExiting...')
             exit(1)
 
-    if (usedlist):
+    if (usedlist or use_stdin):
         try:
-            f_open = open(usedlist, 'r').readlines()
+            if usedlist:
+                f_open = open(usedlist, 'r').readlines()
+            if use_stdin:
+                try:
+                    f_open = stdin.readlines()
+                except KeyboardInterrupt:
+                    print('\nExiting...')
+                    exit(0)
         except Exception as e:
             e = '[!] Error: Unable to use list [%s].' % (usedlist)
             if ((api is not True) and (notext is not True)):
