@@ -1470,7 +1470,9 @@ def Test_URL(url,
         return(findings_list)  # If BFAC called as a library.
 
     if (api is True):
-        print(str(findings_list).replace('"', '\\"').replace("'", '"'))
+        pass
+        # Nothing will be printed currently.
+        # findings_list will be printed at the end of the scan.
 
 
 # Prints version when requested (command-line use)
@@ -1482,6 +1484,7 @@ if (__name__ == '__main__'):
 # Checking inputs when using via command-line.
 if (__name__ == '__main__'):
     # Check if URL or List Input is used (command-line use)
+    # Prints missing URL or List as the default input.
     if ((url is None) and (usedlist is None) and (use_stdin is None)):
         e = '[!] Error: Either URL or List should be supplied.'
         print(tcolor.red + str(e) + tcolor.endcolor)
@@ -1491,6 +1494,13 @@ if (__name__ == '__main__'):
     # Check if both URL and List Input is used (command-line use)
     if (url is not None) and (usedlist is not None):
         e = '[!] Error: Both URL and List are supplied.'
+        print(tcolor.red + str(e) + tcolor.endcolor)
+        print('\nExiting...')
+        exit(1)
+
+    if (((url is not None) or
+         (usedlist is not None)) and (use_stdin is not None)):
+        e = '[!] Error: --stdin is used with URL or List.'
         print(tcolor.red + str(e) + tcolor.endcolor)
         print('\nExiting...')
         exit(1)
@@ -1650,6 +1660,9 @@ if (__name__ == '__main__'):
                 print(tcolor.purple +
                       '[*%*] Finished.' +
                       tcolor.endcolor)
+            if (api is True):
+                o = str(findings_list).replace('"', '\\"').replace("'", '"')
+                print(o)
         except KeyboardInterrupt:
             print('\nKeyboardInterrupt Detected.')
             print('\nExiting...')
@@ -1704,9 +1717,12 @@ if (__name__ == '__main__'):
             if ((api is not True) and (notext is not True)):
                 ConsoleOutput().Message_with_all_Findings(
                     findings_list)
-            print(tcolor.purple +
-                  '\n\n[*%*] Finished.' +
-                  tcolor.endcolor)
+                print(tcolor.purple +
+                      '\n\n[*%*] Finished.' +
+                      tcolor.endcolor)
+            if (api is True):
+                o = str(findings_list).replace('"', '\\"').replace("'", '"')
+                print(o)
         except KeyboardInterrupt:
             print('\nKeyboardInterrupt Detected.')
             print('\nExiting...')
