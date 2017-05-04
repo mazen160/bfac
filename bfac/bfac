@@ -112,25 +112,25 @@ def instructions():
     """
 
     instructions = """
-        Arguments:-
+      Arguments:-
 
-    * Target Options
+  * Target Options
 -u, --url URL               Check a single URL.
 -l, --list LIST             Check a list of URLs.
---stdin                     Checks URLs from STDIN input.
+--stdin                     Check URLs from STDIN input.
 
-    * Testing Options
+  * Testing Options
 -level, --level LEVEL       Set testing level [0-4] (Default: 4).
---dvcs-test DVCS_TEST       Performs only DVCS testing, which is also\
+--dvcs-test                 Perform DVCS testing only, which is also\
  available by default on Level 4.
 
-    * Artifacts Detection Options
+  * Artifacts Detection Options
 -vsc, --valid-status-codes VALID_STATUS_CODES
                             Specify valid status codes for checks,\
- seperated by commas.(Default: 200).
+ separated by commas.(Default: 200).
 -isc, --invalid-status-codes INVALID_STATUS_CODES
                             Specify invalid status codes for checks,\
- seperated by commas.(Default: 403,404).
+ separated by commas.(Default: 403,404).
 -icl, --invalid-content-length INVALID_CONTENT_LENGTH
                             Manually specify the invalid\
  Content-Length, instead of performing this check automatically.
@@ -143,9 +143,9 @@ def instructions():
   (Default: both)
 -xsc, --exclude-status-codes EXCLUDE_STATUS_CODES
                             Specify status codes to exclude,\
- seperated by commas.
+ separated by commas.
 
-    * Requests-Related Options
+  * Requests-Related Options
 -ua, --user-agent USER_AGENT    HTTP User-Agent header value.
 -ra, --random-agent             Use random User-Agents.
 --cookie COOKIE                 HTTP Cookie header value.
@@ -154,23 +154,23 @@ def instructions():
  (e.g. "Accept-Language: fr\\nETag: 123")
 --proxy PROXY                   Use a proxy on testing.
 --proxy-cred PROXY_CRED         Proxy authentication credentials\
-(name:password)
+ (name:password)
 --timeout TIMEOUT               HTTP Request timeout by seconds.\
  (Default: 5)
 
-    * Output-Related Options
+  * Output-Related Options
 -o, --output OUTPUT             Save identified URLs into a file.
 --verbose-output OUTPUT         Save identified URLs, with \
 status-codes and content-length into a file.
 
-    * Other Options
+  * Other Options
 -h, --help                      Show this help message and exit.
---no-text                       Prints and writes a clean output\
+--no-text                       Print and write a clean output\
 with only results.
---api                           Shows findings in JSON,\
+--api                           Show findings in JSON,\
  suitable for APIs.
 -v, --verbose                   Enable verbosity.
---debug                         Enables debugging.
+--debug                         Enable debugging.
 -V, --version                   Show current version and exit.
 """
     return(instructions)
@@ -329,7 +329,7 @@ if (__name__ == '__main__'):
                         default=False)
     parser.add_argument("-V", "--version",
                         dest='show_version',
-                        help="Show current vesion and exit.",
+                        help="Show current version and exit.",
                         action='store_true')
 
     args = parser.parse_args()
@@ -434,7 +434,7 @@ def Exception_Handler(message, exception):
 
 class Request_Handler():
     """
-    Responsible for handling URLs and perfoming requests.
+    Responsible for handling URLs and performing requests.
     """
     def __init__(self):
         self.timeout = 5  # Default timeout.
@@ -635,7 +635,7 @@ class URL_Work():
             # Cleaning url
             url = self.url_clean(url)
 
-            # Sheme: http
+            # Scheme: http
             default_protocol = 'http'
             if ('://' not in url):
                 url = str(default_protocol) + str('://') + str(url)
@@ -832,6 +832,8 @@ def Generate_BFA_URLs(url,
         full_path + '.svn/entries',
         site + '/.svn/all-wcprops',
         full_path + '.svn/all-wcprops',
+        full_path + '.svn/wc.db',
+        site + '/.svn/wc.db',
         site + '/.svnignore',
         full_path + '.svnignore',
         site + '/CVS/Entries',
@@ -908,7 +910,7 @@ class Verify_Response():
           to exists
         * Returns False is the file does not seem to exist.
         * Returns int > 0: if there was an issue
-          in valid_status_codes orinvalid_status_codes.
+          in valid_status_codes or invalid_status_codes.
         """
 
         # Validating
@@ -1525,7 +1527,7 @@ if (__name__ == '__main__'):
         exit(1)
 
     if (api is True) and (notext is True):
-        e = '[!] Error: Both --api and --notext are choosen.\n' + \
+        e = '[!] Error: Both --api and --notext are chosen.\n' + \
             'Only one of these options can be used.'
         print(tcolor.red + str(e) + tcolor.endcolor)
         print('\nExiting...')
