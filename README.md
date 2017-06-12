@@ -27,11 +27,17 @@ BFAC (Backup File Artifacts Checker) is an automated tool that checks for backup
 ```python
 import bfac
 
+
 testing_level = 4
-BFA_URLS = bfac.Generate_BFA_URLs('http://example.com/test.php', testing_level=testing_level)  # Returns a list of BFA patterns for http://example.com/test.php
 
-BFA_Testing_Result = bfac.Test_URL('http://example.com/test.php', testing_level=testing_level)  # Performs BFA testing using BFAC, and returns a list of findings, if any. If nothing is identified, it returns an empty list.
+# Returns a list of BFA patterns for http://example.com/test.php
+BFA_URLS = bfac.Generate_BFA_URLs(
+    'http://example.com/test.php', testing_level=testing_level)
 
+# Performs BFA testing using BFAC, and returns a list of findings, if any.
+# If nothing is identified, it returns an empty list.
+BFA_Testing_Result = bfac.Test_URL(
+    'http://example.com/test.php', testing_level=testing_level)
 ```
 
 ## Requirements
