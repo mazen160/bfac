@@ -24,7 +24,7 @@ BFAC (Backup File Artifacts Checker) is an automated tool that checks for backup
 | Exclude results with specific status-codes                | `bfac --exclude-status-codes 301,999 http://example.com/test.php`           |
 
 ## Using BFAC as a module
-```
+```python
 import bfac
 
 testing_level = 4
