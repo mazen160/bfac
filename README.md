@@ -24,14 +24,20 @@ BFAC (Backup File Artifacts Checker) is an automated tool that checks for backup
 | Exclude results with specific status-codes                | `bfac --exclude-status-codes 301,999 http://example.com/test.php`           |
 
 ## Using BFAC as a module
-```
+```python
 import bfac
 
+
 testing_level = 4
-BFA_URLS = bfac.Generate_BFA_URLs('http://example.com/test.php', testing_level=testing_level)  # Returns a list of BFA patterns for http://example.com/test.php
 
-BFA_Testing_Result = bfac.Test_URL('http://example.com/test.php', testing_level=testing_level)  # Performs BFA testing using BFAC, and returns a list of findings, if any. If nothing is identified, it returns an empty list.
+# Returns a list of BFA patterns for http://example.com/test.php
+BFA_URLS = bfac.Generate_BFA_URLs(
+    'http://example.com/test.php', testing_level=testing_level)
 
+# Performs BFA testing using BFAC, and returns a list of findings, if any.
+# If nothing is identified, it returns an empty list.
+BFA_Testing_Result = bfac.Test_URL(
+    'http://example.com/test.php', testing_level=testing_level)
 ```
 
 ## Requirements
@@ -59,7 +65,9 @@ The issue tracker is the preferred channel for bug reports and features requests
 This project is made for educational and ethical testing purposes only. Usage of BFAC for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program.
 
 ## License
-The project is currently licensed under GNU GPLv3.0 License.
+The project is currently licensed under GNU GPLv3.0 License. 
+
+[![GitHub license](https://img.shields.io/badge/license-AGPL-blue.svg?style=flat-square)](https://raw.githubusercontent.com/mazen160/bfac/master/LICENSE.txt)
 
 ## Author
 *Mazin Ahmed*
@@ -67,4 +75,6 @@ The project is currently licensed under GNU GPLv3.0 License.
 * Email: *mazin AT mazinahmed DOT net*
 * Twitter: [https://twitter.com/mazen160](https://twitter.com/mazen160)
 * Linkedin: [http://linkedin.com/in/infosecmazinahmed](http://linkedin.com/in/infosecmazinahmed)
+
+[![Twitter](https://img.shields.io/twitter/url/https/github.com/mazen160/bfac.svg?style=social)](https://twitter.com/intent/tweet?text=Wow:&url=%5Bobject%20Object%5D)
 
