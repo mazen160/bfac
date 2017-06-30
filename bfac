@@ -1,0 +1,1721 @@
+#!/usr/bin/env python3
+# coding=utf-8
+# *******************************************************************
+# *** BFAC: Backup File Artifacts Checker ***
+# * Description:
+#   An automated tool that checks for backup artifacts
+#   that may disclose the web-application's source code.
+# * Version:
+#   v1.3
+# * Homepage:
+#   https://github.com/mazen160/bfac
+# * Author:
+#   Mazin Ahmed <Mazin AT MazinAhmed DOT net>
+# *******************************************************************
+
+# Modules
+import sys
+import os
+import random
+import time
+import csv
+import json
+import argparse
+import platform
+import threading
+import webbrowser
+import colorama
+try:
+    import Queue as queue
+except ImportError:
+    import queue
+try:
+    from urllib import parse as urlparse
+except ImportError:
+    import urlparse
+try:
+    import requests
+except ImportError:
+    if (__name__ == '__main__'):
+        print('[!] Error: requests module does not seem to be installed.')
+        print('Use the following command to install requests module.')
+        if (sys.version_info[0] == 2):
+            print('$ pip install requests')
+        else:
+            print('$ pip3 install requests')
+        print('\nExiting...')
+        exit(1)
+
+# Disable SSL warnings
+try:
+    import requests.packages.urllib3
+    requests.packages.urllib3.disable_warnings()
+except Exception:
+    pass
+
+
+def version():
+    """
+    Returns current version.
+    """
+
+    version = "1.3"
+    return(version)
+
+
+class symbols:
+    """
+    Standard symbols list
+    """
+
+    error = colorama.Fore.RED + '[!]' + colorama.Fore.RESET
+    success = colorama.Fore.GREEN + '[$]' + colorama.Fore.RESET
+    info = colorama.Fore.YELLOW + '[i]' + colorama.Fore.RESET
+
+
+def logo(enable_colored_logo=True):
+    """
+    Returns logo.
+    """
+
+    if enable_colored_logo is False:
+        """
+        Uncolored Logo.
+        """
+
+        logo = 70 * "-" + """"
+\t\t _____ _____ _____ _____
+\t\t| __  |   __|  _  |     |
+\t\t| __ -|   __|     |   --|
+\t\t|_____|__|  |__|__|_____|
+\t\t
+\t   -:::Backup File Artifacts Checker:::-
+\t\t     Version: """ + str(version()) + """
+  Advanced Backup-File Artifacts Testing for Web-Applications
+Author: Mazin Ahmed | <mazin AT mazinahmed DOT net> | @mazen160\
+\n""" + 70 * "-"
+
+    if enable_colored_logo is True:
+        """
+        Colored Logo.
+        """
+
+        logo = 70 * "-" + colorama.Fore.CYAN + """
+\t\t _____ _____ _____ _____
+\t\t| __  |   __|  _  |     |
+\t\t| __ -|   __|     |   --|
+\t\t|_____|__|  |__|__|_____|
+\t\t
+\t   -:::Backup File Artifacts Checker:::-
+\t\t     Version: """ + str(version()) + """
+  Advanced Backup-File Artifacts Testing for Web-Applications
+Author: Mazin Ahmed | <mazin AT mazinahmed DOT net> | @mazen160\
+\n"""\
++ colorama.Style.RESET_ALL + 70 * "-"
+
+    return(logo)
+
+
+def instructions():
+    """
+    Returns command-line instructions for using BFAC.
+    """
+
+    instructions = """
+      Arguments:-
+
+  * Target Options
+-u, --url URL               Check a single URL.
+-l, --list LIST             Check a list of URLs.
+--stdin                     Check URLs from STDIN input.
+
+  * Testing Options
+-level, --level LEVEL       Set testing level [1-5] (default: 5).
+--dvcs-test                 Perform DVCS testing only, which is also\
+ available by default on Level 5.
+--threads THREADS           Thread workers to use (default 10).
+--request-rate-throttling REQUESTS_PER_SECOND
+                            Request rate throttling per second\
+ (default: 30)
+
+
+  * Artifacts Detection Options
+--invalid-content-length INVALID_CONTENT_LENGTH
+                            Manually specify the invalid\
+ Content-Length, instead of performing this check automatically.
+--invalid-content-length-offset OFFSET
+                            Manually specify the Content-Length\
+ offset for invalid pages (default: 50).
+--technique, --detection-technique TECNIQUE
+                           Technique to verify the availability\
+ of the file. (options: status_code, content_length, all)\
+  (default: all)
+-xsc, --exclude-status-codes EXCLUDE_STATUS_CODES
+                            Specify status codes to exclude,\
+ separated by commas.
+
+  * Requests-Related Options
+-ua, --user-agent USER_AGENT
+                            HTTP User-Agent header value.
+-ra, --random-agent         Use random User-Agents.
+--cookie COOKIE             HTTP Cookie header value.
+--host HOST                 HTTP Host header value.
+--headers HEADERS           Extra headers\
+ (e.g. "Accept-Language: fr\\nETag: 123")
+--proxy PROXY               Use a proxy on testing.
+--proxy-cred PROXY_CRED     Proxy authentication credentials\
+ (name:password).
+--timeout TIMEOUT           HTTP Request timeout by seconds.\
+ (default: 5)
+
+  * Output-Related Options
+-o, --output OUTPUT         Save identified URLs into a file.
+--verbose-output OUTPUT     Save identified URLs, with \
+status-codes and content-length into a file.
+--json-output OUTPUT        Save findings in JSON file.
+--csv-output OUTPUT         Save findings in CSV file.
+
+  * Other Options
+-h, --help                  Show this help message and exit.
+--no-text                   Print and write a clean output\
+ with results only.
+--debug                     Enable debugging.
+--issue                     Report an issue via GitHub.
+-V, --version               Show current version and exit.
+"""
+    return(instructions)
+
+
+def exception_handler(message,
+                      exception,
+                      enable_debug=True,
+                      notext=False):
+    """
+    Handles exceptions.
+    """
+
+    if enable_debug is not True:
+        return(2)
+    if ((notext is True) or (__name__ != '__main__')):
+        return(1)
+        # showing exception that  --debug is not global used
+        # or when used as a module or
+        # --no-text is used.
+    exception = str(exception)
+    message = str(message)
+    print("%sError: %s :: %s%s" % (colorama.Fore.RED,
+                                   message,
+                                   exception,
+                                   colorama.Style.RESET_ALL))
+
+
+class RequestsHandler:
+    """
+    Responsible for handling URLs and performing requests.
+    """
+
+    def __init__(self):
+        self.timeout = 5  # Default timeout.
+
+    def ua_handler(self, use_random_agent=False):
+        if use_random_agent is False:
+            # BFAC DEFAULT UA
+            chosen_agent = 'BFAC ' + str(version()) + \
+                ' (https://github.com/mazen160/bfac)'
+
+        if use_random_agent is True:
+            # List of random User-Agents.
+            agents = [
+                "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:51.0) " +
+                "Gecko/20100101 Firefox/51.0",
+                "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:51.0)" +
+                " Gecko/20100101 Firefox/51.0",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/46.0.2486.0 Safari/537.36 Edge/13.10586",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/56.0.2924.87 Safari/537.36",
+                "Mozilla/5.0 (Windows NT 6.1; WOW64; " +
+                "Trident/7.0; rv:11.0) like Gecko",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS " +
+                "X 10_12_2) AppleWebKit/602.3.12 (KHTML, " +
+                "like Gecko) Version/10.0.2 Safari/602.3.12",
+                "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; " +
+                "rv:51.0) Gecko/20100101 Firefox/51.0",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 10_2_1 " +
+                "like Mac OS X) AppleWebKit/602.4.6 (KHTML, " +
+                "like Gecko) Version/10.0 Mobile/14D27" +
+                " Safari/602.1",
+                "Mozilla/5.0 (Linux; Android 6.0.1; " +
+                "Nexus 6P Build/MTC19X) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/56.0.2924.87 " +
+                "Mobile Safari/537.36",
+                "Mozilla/5.0 (Linux; Android 4.4.4; Nexus 5 " +
+                "Build/KTU84P) AppleWebKit/537.36 (KHTML, " +
+                "like Gecko) Chrome/56.0.2924.87" +
+                "Mobile Safari/537.36",
+                "Mozilla/5.0 (compatible; Googlebot/2.1; " +
+                "+http://www.google.com/bot.html)"
+            ]
+
+            chosen_agent = random.choice(agents)
+        return(chosen_agent)
+
+    def requester(self, link, proxy=None, proxy_cred=None,
+                  custom_user_agent=None, cookie=None,
+                  host_header=None, http_headers=None,
+                  random_user_agent=False, timeout=None,
+                  notext=False, enable_debug=False):
+
+        if timeout is None:
+            timeout = self.timeout  # Use default timeout.
+
+        try:
+            if custom_user_agent is not None:
+                user_agent = custom_user_agent
+            else:
+                if random_user_agent is True:
+                    user_agent = self.ua_handler(use_random_agent=True)
+                else:
+                    # Use BFAC default UA.
+                    user_agent = self.ua_handler(use_random_agent=False)
+
+            headers = {'User-Agent': user_agent, 'Accept': '*/*'}
+
+            if cookie is not None:
+                cookie_dict = {'Cookie': str(cookie)}
+                headers.update(cookie_dict)
+
+            if host_header is not None:
+                host_dict = {'Host': str(host_header)}
+                headers.update(host_dict)
+
+            if http_headers is not None:
+                for _ in http_headers:
+                    headers.update(_)
+
+            if proxy is not None:
+                proxy = str(proxy)
+                proxy_scheme_original = proxy.split(':')[0].lower()
+                # requests module is buggy when it comes to proxying.
+                # We will use the default proxy_scheme as "http"
+                # for http and socks4/5. This is the only easy way.
+                proxy_scheme = 'http'
+
+                if (proxy_cred is not None):
+                    username = str(str(proxy_cred).split(':')[0])
+                    password = str(str(proxy_cred).split(':')[1])
+                    replace_original_start_with = (
+                        str(proxy_scheme_original) +
+                        '://' + str(username) +
+                        ':' +
+                        str(password) +
+                        str('@'))
+                    proxy_url = proxy.replace(
+                        str(proxy_scheme_original) + '://',
+                        replace_original_start_with)
+                else:
+                    proxy_url = str(proxy)
+                proxy_dict = {str(proxy_scheme): str(proxy_url)}
+
+                # Establishing request with proxy.
+                req = requests.get(link,
+                                   headers=headers,
+                                   verify=False,
+                                   allow_redirects=False,
+                                   timeout=int(timeout),
+                                   proxies=proxy_dict)
+
+            if proxy is None:
+                # Establishing request without proxy.
+                req = requests.get(link,
+                                   headers=headers,
+                                   verify=False,
+                                   allow_redirects=False,
+                                   timeout=int(timeout))
+
+            request_response_code = req.status_code
+            request_response_content_length = len(req.content)
+            return(request_response_code,
+                   request_response_content_length)
+
+        except requests.exceptions.SSLError as e:
+            exception_handler('SSL Error at ' + str(link),
+                              str(e),
+                              notext=notext,
+                              enable_debug=enable_debug)
+            return(None, None)
+        except requests.exceptions.ConnectionError as e:
+            exception_handler('Connection Error at ' + str(link),
+                              str(e),
+                              notext=notext,
+                              enable_debug=enable_debug)
+            return(None, None)
+        except requests.exceptions.MissingSchema as e:
+            exception_handler('Error: Invalid URL' +
+                              ' - Missing Schema at ' + str(link),
+                              str(e),
+                              notext=notext,
+                              enable_debug=enable_debug)
+            return(None, None)
+        except requests.exceptions.InvalidSchema as e:
+            exception_handler('Error: Invalid URL' +
+                              ' - Invalid Schema at ' + str(link),
+                              str(e),
+                              notext=notext,
+                              enable_debug=enable_debug)
+            return(None, None)
+        except requests.exceptions.InvalidURL as e:
+            exception_handler('Error: Invalid URL at ' + str(link),
+                              str(e),
+                              notext=notext,
+                              enable_debug=enable_debug)
+            return(None, None)
+        except requests.exceptions.ReadTimeout as e:
+            exception_handler('Error: Connection Timeout at ' + str(link),
+                              str(e),
+                              notext=notext,
+                              enable_debug=enable_debug)
+            return(None, None)
+
+    def initial_request(self,
+                        link,
+                        force_initial_content_length=None,
+                        forced_initial_content_length=None,
+                        proxy=None,
+                        proxy_cred=None,
+                        custom_user_agent=None,
+                        cookie=None,
+                        host_header=None,
+                        http_headers=None,
+                        random_user_agent=False,
+                        timeout=None,
+                        notext=False,
+                        enable_debug=False):
+        """
+        Performs initial request and gives a baseline, based on it,
+        the detection for content-length will be done.
+        if force_initial_content_length is set,
+        it will force their values as a result.
+
+        # Returns (None, None) if their is an error.
+        """
+
+        if ((force_initial_content_length is True) and
+                (forced_initial_content_length is not None)):
+
+            expected_status_code = 200
+            return(expected_status_code, forced_initial_content_length)
+
+        # Obtain site and file_dir via URLWork().url_handler()
+        site = URLWork().url_handler(link)[2]
+        file_dir = URLWork().url_handler(link)[5]
+
+        random_ascii_charset = 'abcdefghijklmnopqrstuvwxyz0123456789'
+        random_value = \
+            ''.join(random.choice(random_ascii_charset)
+                    for _ in range(5))
+        random_value_ext = \
+            ''.join(random.choice(random_ascii_charset)
+                    for _ in range(3))
+
+        link = site + file_dir + random_value + '.' + random_value_ext
+
+        # Using Requester API
+        resp = self.requester(
+            link,
+            proxy=proxy,
+            proxy_cred=proxy_cred,
+            custom_user_agent=custom_user_agent,
+            cookie=cookie,
+            host_header=host_header,
+            http_headers=http_headers,
+            random_user_agent=random_user_agent,
+            timeout=timeout,
+            notext=notext,
+            enable_debug=enable_debug)
+
+        initial_status_code = resp[0]
+        initial_content_length = resp[1]
+
+        return(initial_status_code, initial_content_length)
+
+
+class URLWork:
+    """
+    This class is responsible for handling URLs for testing.
+    """
+
+    def url_clean(self, url):
+        """
+        Cleans-up a URL.
+        """
+
+        url = url.split('?')[0]
+        url = url.replace('#', '%23')
+        url = url.replace(' ', '%20')
+        return(url)
+
+    def url_handler(self, url):
+        """
+        Parses a URL, and returns output of URL structure.
+        """
+
+        try:
+            # Assuming URL is: http://example.com/uploads/test.php
+
+            # Cleaning url
+            url = self.url_clean(url)
+
+            # Scheme: http
+            default_protocol = 'http'
+            if ('://' not in url):
+                url = str(default_protocol) + str('://') + str(url)
+            scheme = urlparse.urlparse(url).scheme
+
+            # Domain: example.com
+            domain = urlparse.urlparse(url).netloc
+
+            # Site: http://example.com
+            site = scheme + '://' + domain
+
+            # FilePath: /uploads/test.php
+            file_path = urlparse.urlparse(url).path
+            if (file_path == ''):
+                file_path = '/'
+
+            # Filename: test.php
+            try:
+                filename = url.split('/')[-1]
+            except IndexError:
+                filename = ''
+
+            # File Dir: /uploads/
+            file_dir = file_path.rstrip(filename)
+            if (file_dir == ''):
+                file_dir = '/'
+
+            # FullPath: http://example.com/uploads/
+            full_path = site + file_dir
+
+            # File Extension: php
+            try:
+                filename_ext = filename.split('.')
+                filename_ext.pop(0)
+                filename_ext = '.'.join(filename_ext)
+            except IndexError:
+                filename_ext = ''
+
+            # File without Extension: test
+            try:
+                filename_without_ext = filename.split('.')[0]
+            except IndexError:
+                filename_without_ext = ''
+        except IndexError:
+            pass
+
+        return(scheme, domain, site, file_path, filename, file_dir,
+               full_path, filename_ext, filename_without_ext)
+
+
+def generate_bfa_urls(url,
+                      testing_level=5,
+                      dvcs_test=False):
+    """
+    Generates BFA testing URLs.
+    Returns a list of BFA testing URLs of given URL.
+    """
+
+    (scheme, domain, site, file_path, filename,
+     file_dir, full_path, filename_ext,
+     filename_without_ext) = URLWork().url_handler(url)
+
+    # LEVEL 1
+    backup_testing_level1 = [
+        site + file_path + '~',
+        site + file_path + '%23',
+        site + file_path + '.save',
+        site + file_path + '.swp',
+        site + file_path + '.swo',
+        full_path + '%23' + filename + '%23',
+        site + file_path + '.bak'
+    ]
+
+    # LEVEL 2
+    backup_testing_level2 = [
+        site + file_path + '_',
+        site + file_path + '_bak',
+        site + file_path + '-bak',
+        site + file_path + '.bk',
+        site + file_path + '.bkp',
+        full_path + filename + '.bac',
+        site + file_path + '.old',
+        site + file_path + '_old',
+        site + file_path + '.copy',
+        site + file_path + '.original',
+        site + file_path + '.orig',
+        site + file_path + '.org',
+        site + file_path + '.txt',
+        site + file_path + '.default',
+        full_path + filename + '.tpl',
+        full_path + filename + '.tmp',
+        full_path + filename + '.temp',
+        full_path + '.' + filename + ".swp",
+        full_path + '.' + filename + ".swo",
+        full_path + '_' + filename + '.swp',
+        full_path + '_' + filename + '.swo',
+        full_path + filename + '.sav',
+        full_path + filename + '.conf',
+        full_path + filename_without_ext +
+        '%20%28copy%29.' + filename_ext,
+        full_path + 'Copy%20of%20' + filename,
+        full_path + 'copy%20of%20' + filename,
+        full_path + 'Copy_' + filename,
+        full_path + 'Copy%20' + filename,
+        full_path + 'Copy_of_' + filename,
+        full_path + 'Copy_(1)_of_' + filename,
+        full_path + 'Copy_(2)_of_' + filename,
+        full_path + filename_without_ext +
+        '%20-%20Copy.' + filename_ext,
+        full_path + filename_without_ext + '%20copy.' + filename_ext
+    ]
+
+    # LEVEL 3
+    backup_testing_level3 = [
+        full_path + filename_without_ext + '.txt',
+        full_path + filename_without_ext + '.bak',
+        full_path + filename_without_ext + '.bak1',
+        full_path + filename_without_ext + '.bakup',
+        full_path + filename_without_ext + '.bakup1',
+        full_path + filename_without_ext + '.bkp',
+        full_path + filename_without_ext + '.save',
+        full_path + filename_without_ext + '.old',
+        full_path + filename_without_ext + '.orig',
+        full_path + filename_without_ext + '.original',
+        full_path + filename_without_ext + '.sql',
+        site + file_path + '%00',
+        site + file_path + '%01',
+        full_path + '~' + filename,
+        full_path + filename_without_ext + '.tpl',
+        full_path + filename_without_ext + '.tmp',
+        full_path + filename_without_ext + '.temp',
+        full_path + filename + '.saved',
+        full_path + filename + '.back',
+        full_path + filename + '.bck',
+        full_path + filename + '.bakup',
+        full_path + filename_without_ext + '.saved',
+        full_path + filename_without_ext + '.back',
+        full_path + filename_without_ext + '.bck',
+        full_path + filename_without_ext + '.bakup',
+        full_path + '_' + filename,
+        full_path + '%20' + filename,
+        full_path + filename + '.nsx',
+        full_path + filename + '.cs',
+        full_path + filename + '.csproj',
+        full_path + filename + '.vb',
+        full_path + filename + '.0',
+        full_path + filename + '.1',
+        full_path + filename + '.2',
+        full_path + filename + '.arc',
+        full_path + filename + '.inc',
+        full_path + filename + '.lst',
+        full_path + '.~lock.' + filename + '%23',
+        full_path + '.~' + filename,
+        full_path + '~%24' + filename
+    ]
+
+    # LEVEL 4
+    backup_testing_level4 = [
+        site + file_path + '.tar',
+        site + file_path + '.rar',
+        site + file_path + '.zip',
+        full_path + '~' + filename_without_ext + '.tmp',
+        site + file_path + '.tar.gz',
+        full_path + 'backup-' + filename,
+        full_path + filename_without_ext + '-backup.' + filename_ext,
+        full_path + filename_without_ext + '-bkp.' + filename_ext,
+        full_path + filename_without_ext + '.tar',
+        full_path + filename_without_ext + '.rar',
+        full_path + filename_without_ext + '.zip',
+        full_path + filename_without_ext + '.tar.gz',
+        full_path + filename_without_ext + '.sql.gz',
+        full_path + filename_without_ext + '.bak.sql',
+        full_path + filename_without_ext + '.bak.sql.gz',
+        full_path + filename_without_ext + '.bak.sql.bz2',
+        full_path + filename_without_ext + '.bak.sql.tar.gz'
+    ]
+
+    # LEVEL 5
+    backup_testing_level5 = [
+        site + '/.git/HEAD',
+        full_path + '.git/HEAD',
+        site + '/.git/index',
+        full_path + '.git/index',
+        site + '/.git/config',
+        full_path + '.git/config',
+        site + '/.gitignore',
+        full_path + '.gitignore',
+        site + '/.git-credentials',
+        full_path + '.git-credentials',
+        site + '/.bzr/README',
+        full_path + '.bzr/README',
+        site + '/.bzr/checkout/dirstate',
+        full_path + '.bzr/checkout/dirstate',
+        site + '/.hg/requires',
+        full_path + '.hg/requires',
+        site + '/.hg/store/fncache',
+        full_path + '.hg/store/fncache',
+        site + '/.svn/entries',
+        full_path + '.svn/entries',
+        site + '/.svn/all-wcprops',
+        full_path + '.svn/all-wcprops',
+        full_path + '.svn/wc.db',
+        site + '/.svn/wc.db',
+        site + '/.svnignore',
+        full_path + '.svnignore',
+        site + '/CVS/Entries',
+        full_path + 'CVS/Entries',
+        site + '/.cvsignore',
+        full_path + '.cvsignore',
+        site + '/.idea/misc.xml',
+        full_path + '.idea/misc.xml',
+        site + '/.idea/workspace.xml',
+        full_path + '.idea/workspace.xml',
+        site + '/.DS_Store',
+        full_path + '.DS_Store',
+        site + '/composer.lock',
+        full_path + 'composer.lock'
+    ]
+
+    testing_level = str(testing_level)
+
+    available_levels = ['1', '2', '3', '4', '5']
+    # Check is requested testing_level is within available levels.
+    # If not within available levels, choose highest level.
+    if (testing_level not in available_levels):
+        testing_level = '5'
+
+    if (testing_level == '1'):
+        backup_testing_checks = backup_testing_level1
+    if (testing_level == '2'):
+        backup_testing_checks = backup_testing_level1 + \
+            backup_testing_level2
+    if (testing_level == '3'):
+        backup_testing_checks = backup_testing_level1 + \
+            backup_testing_level2 + \
+            backup_testing_level3
+    if (testing_level == '4'):
+        backup_testing_checks = backup_testing_level1 + \
+            backup_testing_level2 + \
+            backup_testing_level3 + \
+            backup_testing_level4
+    if (testing_level == '5'):
+        backup_testing_checks = backup_testing_level1 + \
+            backup_testing_level2 + \
+            backup_testing_level3 + \
+            backup_testing_level4 + \
+            backup_testing_level5
+    if (dvcs_test is True):
+        backup_testing_checks = backup_testing_level5
+
+    backup_testing_checks = list(set(backup_testing_checks))
+    backup_testing_checks = random.sample(backup_testing_checks,
+                                          len(backup_testing_checks)
+                                          )
+    return(backup_testing_checks)
+
+
+class VerifyResponse:
+    """
+    This class checks and verifies results of requested URLs,
+     and verify file(s) existence.
+    """
+
+    def calculate_valid_content_length(self,
+                                       content_length,
+                                       invalid_content_length_offset=50):
+        """
+        Calculates expected valid content-lengths,
+        based off the initial conducted request.
+        Returns min and max.
+        """
+        content_length = int(content_length)
+
+        invalid_content_length_offset = int(invalid_content_length_offset)
+        initial_content_length_min = \
+            content_length - invalid_content_length_offset
+        initial_content_length_max = \
+            invalid_content_length_offset + content_length
+
+        if (initial_content_length_max < 0):
+            initial_content_length_max = 0
+        if (initial_content_length_min < 0):
+            initial_content_length_min = 0
+
+        return(initial_content_length_min, initial_content_length_max)
+
+    def verify_via_content_length(self,
+                                  content_length,
+                                  initial_content_length_min,
+                                  initial_content_length_max):
+        """
+        Verifies if the file exists by checking the content-length.
+        * Returns True if the file exists.
+        * Returns False if the file does not exist.
+        * Returns int > 0 for exceptions.
+        """
+
+        content_length_test = True
+        if (content_length is None):
+            content_length_test = False
+            return(content_length_test)
+        if ((initial_content_length_min is None) or
+                (initial_content_length_max is None)):
+            return(1)
+        initial_content_length_max = int(initial_content_length_max)
+        for num in range(initial_content_length_min,
+                         initial_content_length_max + 1):
+            if (num == content_length):
+                content_length_test = False
+        return(content_length_test)
+
+    def verify_via_status_code(self,
+                               response_status_code,
+                               valid_status_codes=[200],
+                               excluded_status_codes=[]):
+        """
+        Performs checks on HTTP response status codes.
+        * Returns True is the response is valid, and file seems
+          to exist
+        * Returns False if the file does not seem to exist.
+        * Returns int > 0: if there is an issue
+          in valid_status_codes or invalid_status_codes.
+        """
+
+        # validating
+        result = True
+        if (response_status_code is None):
+            result = False
+
+        if (str(response_status_code) == str(404)):
+            result = False
+            return(result)
+
+        for valid_status_code in valid_status_codes:
+            if (str(response_status_code) == str(valid_status_code)):
+                result = True
+                break
+
+        for excluded_status_code in excluded_status_codes:
+            if (str(response_status_code) == str(excluded_status_code)):
+                result = False
+                break
+
+        return(result)
+
+    def request_check(self,
+                      use_content_length_checks=True,
+                      use_status_code_checks=True,
+                      content_length=None,
+                      initial_content_length_min=None,
+                      initial_content_length_max=None,
+                      invalid_content_length_offset=50,
+                      response_status_code=None,
+                      excluded_status_codes=[]):
+        """
+        Checks whether a file exists based on the response.
+        Returns True if the file exists.
+        Returns False if the file does not exist.
+        * Returns int > 0 for exceptions.
+        """
+
+        # content-length check
+        content_length_check_result = False  # Initializing variable
+        if (use_content_length_checks is True):
+            if ((content_length is None) or
+                    (initial_content_length_min is None) or
+                    (initial_content_length_max is None)):
+                return(1)  # Invalid input.
+
+        if (use_content_length_checks is True):
+            content_length_check_result = self.verify_via_content_length(
+                content_length,
+                initial_content_length_min,
+                initial_content_length_max)
+        else:
+            content_length_check_result = False
+
+        # status-code check
+        status_code_check_result = False  # Initializing variable
+        if (use_status_code_checks is True):
+            status_code_check_result = self.verify_via_status_code(
+                response_status_code,
+                excluded_status_codes=excluded_status_codes)
+        # Checking and returning result.
+
+        if ((status_code_check_result is True) or
+                (content_length_check_result is True)):
+            request_check_result = True
+        else:
+            request_check_result = False
+        return(request_check_result)
+
+
+def request_and_verify_response(url,
+                                use_content_length_checks=True,
+                                use_status_code_checks=True,
+                                excluded_status_codes=[],
+                                invalid_content_length_offset=50,
+                                initial_content_length_min=None,
+                                initial_content_length_max=None,
+                                proxy=None,
+                                proxy_cred=None,
+                                custom_user_agent=None,
+                                cookie=None,
+                                host_header=None,
+                                http_headers=None,
+                                random_user_agent=False,
+                                timeout=None,
+                                notext=False,
+                                findings_queue=None):
+    """
+    This function uses the Request_Handler()
+    and verify_via_status_code() classes to test a URL.
+    and returns if the file exists or not.
+    * Returns True: if the file exists.
+    * Returns False: if the file does not exist.
+    Note: This function is intended for a single URL;
+          It only shows plain results based for a single URL
+          and determines whether a file exists on the server or not.
+    """
+
+    resp = RequestsHandler().requester(
+        url,
+        proxy=proxy,
+        proxy_cred=proxy_cred,
+        custom_user_agent=custom_user_agent,
+        cookie=cookie,
+        host_header=host_header,
+        http_headers=http_headers,
+        random_user_agent=random_user_agent,
+        timeout=timeout,
+        notext=notext)
+
+    file_exists = VerifyResponse().request_check(
+        use_content_length_checks=use_content_length_checks,
+        use_status_code_checks=use_status_code_checks,
+        content_length=resp[1],
+        initial_content_length_min=initial_content_length_min,
+        initial_content_length_max=initial_content_length_max,
+        invalid_content_length_offset=invalid_content_length_offset,
+        response_status_code=resp[0],
+        excluded_status_codes=excluded_status_codes)
+
+    # Remove if exists on excluded status-codes
+    for excluded_status_code in excluded_status_codes:
+        if str(resp[0]) == str(excluded_status_code):
+            file_exists = False
+            break
+
+    if findings_queue is not None:
+        if file_exists is True:
+            output = {"url": url,
+                      "status_code": resp[0],
+                      "content_length": resp[1]}
+            try:
+                if url not in [_["url"] for _ in findings_queue.queue]:
+                    ConsoleOutput(notext=notext).found_message(url,
+                                                               resp[0],
+                                                               resp[1])
+                    if notext is True:
+                        ConsoleOutput(notext=notext).found_message_notext(url)
+                    findings_queue.put(output)
+            except RuntimeError as e:
+                exception_handler('Error: RuntimeError at (%s)' % (url),
+                                  str(e),
+                                  enable_debug=True,
+                                  notext=False)
+
+    return(file_exists, resp)
+
+
+class OutputResults:
+    """
+    Responsible for saving results in an external file.
+    """
+
+    def __init__(self, notext=False, enable_debug=True):
+        self.notext = notext
+        self.enable_debug = enable_debug
+
+    def save_in_simple_txt(self,
+                           findings_list,
+                           txt_file):
+        """
+        Save results in plain text file.
+        Save only URLs.
+        """
+
+        try:
+            output = open(txt_file, 'a')
+            for url in [_["url"] for _ in findings_list]:
+                output.write(url + "\n")
+            output.close()
+        except IOError as e:
+            exception_handler('Error: IOError',
+                              str(e),
+                              enable_debug=self.enable_debug,
+                              notext=self.notext)
+            return(1)
+        except TypeError as e:
+            exception_handler('Error: TypeError',
+                              str(e),
+                              enable_debug=self.enable_debug,
+                              notext=self.notext)
+            return(1)
+        return(0)
+
+    def save_in_verbose_txt(self,
+                            findings_list,
+                            txt_file):
+        """
+        Save results in plain text file.
+        Save: URLs, Status-Code, Content-Length.
+        """
+
+        try:
+            output = open(txt_file, 'a')
+            for _ in findings_list:
+                url = _["url"]
+                status_code = _["status_code"]
+                content_length = _["content_length"]
+                output_data = '[URL]: %s' % (str(url)) + \
+                              ' | ' + \
+                              '[Status-Code]: %s' % (str(status_code)) + \
+                              ' | ' + \
+                              '[Content-Length]: ' + \
+                              '%s' % (str(content_length))
+                output.write(output_data + "\n")
+            output.close()
+        except IOError as e:
+            exception_handler('Error: IOError',
+                              str(e),
+                              enable_debug=self.enable_debug,
+                              notext=self.notext)
+            return(1)
+        except TypeError as e:
+            exception_handler('Error: TypeError',
+                              str(e),
+                              enable_debug=self.enable_debug,
+                              notext=self.notext)
+            return(1)
+        return(0)
+
+    def save_in_json_file(self,
+                          findings_list,
+                          json_file):
+        """
+        Save results in JSON file.
+        """
+
+        try:
+            output = open(json_file, 'a')
+            data = str(json.dumps(list(findings_list)))
+            output.write(data)
+            output.close()
+        except IOError as e:
+            exception_handler('Error: IOError',
+                              str(e),
+                              enable_debug=self.enable_debug,
+                              notext=self.notext)
+            return(1)
+        except TypeError as e:
+            exception_handler('Error: TypeError',
+                              str(e),
+                              enable_debug=self.enable_debug,
+                              notext=self.notext)
+            return(1)
+        return(0)
+
+    def save_in_csv_file(self,
+                         findings_list,
+                         csv_file):
+        """
+        Save results in plain text file.
+        Save: URLs, Status-Code, Content-Length.
+        """
+
+        try:
+            csvfile = open(csv_file, 'a')
+            csv_writer = csv.writer(csvfile,
+                                    delimiter=',',
+                                    quotechar='"',
+                                    quoting=csv.QUOTE_MINIMAL)
+            for _ in findings_list:
+                url = _["url"]
+                status_code = _["status_code"]
+                content_length = _["content_length"]
+                csv_writer.writerow([_["url"],
+                                    _["status_code"],
+                                    _["content_length"]])
+            csvfile.close()
+        except IOError as e:
+            exception_handler('Error: IOError',
+                              str(e),
+                              enable_debug=self.enable_debug,
+                              notext=self.notext)
+            return(1)
+        except TypeError as e:
+            exception_handler('Error: TypeError',
+                              str(e),
+                              enable_debug=self.enable_debug,
+                              notext=self.notext)
+            return(1)
+        return(0)
+
+
+class ConsoleOutput:
+
+    def __init__(self, notext=False):
+        self.notext = notext
+
+    def console_output_check(self):
+        if (__name__ != '__main__'):
+            return(1)
+        if (self.notext is True):
+            return(1)
+
+    def erase_line(self):
+        if platform.system() == 'Windows':
+            sys.stdout.write("\b" * 4096)
+        else:
+            sys.stdout.write('\033[1K')
+            sys.stdout.write('\033[0G')
+
+    def print_base_url(self, url):
+        if self.console_output_check() == 1:
+            return(1)
+        with threading.Lock():
+            sys.stdout.write("%s URL: %s\n" % (symbols.info, url))
+
+    def testing_url_message(self,
+                            url):
+        if self.console_output_check() == 1:
+            return(1)
+        with threading.Lock():
+            self.erase_line()
+            sys.stdout.flush()
+            output = ('[#] Testing:-> %s' % (url))
+            sys.stdout.write(output)
+            sys.stdout.flush()
+
+    def found_message(self,
+                      url,
+                      response_status_code,
+                      content_length):
+        if self.console_output_check() == 1:
+            return(1)
+
+        with threading.Lock():
+            sys.stdout.write(("\n" + symbols.success + " Discovered: -> {%s}" +
+                              " (Response-Code: %s | Content-Length: %s)\n")
+                             % (url, response_status_code,
+                                content_length))
+            sys.stdout.flush()
+
+    def found_message_notext(self,
+                             url):
+        with threading.Lock():
+            sys.stdout.write("%s\n" % (url))
+            sys.stdout.flush()
+
+    def message_with_all_findings(self,
+                                  findings_list):
+        if self.console_output_check() == 1:
+            return(1)
+        print('\n')
+        print(symbols.info +
+              '%s Findings:%s' % (colorama.Fore.CYAN,
+                                  colorama.Style.RESET_ALL))
+        if (len(findings_list) == 0):
+            print(symbols.info + ' No BFA was identified.')
+        else:
+            for _ in findings_list:
+                if str(_["status_code"]).startswith('2'):
+                    status = colorama.Fore.GREEN
+                elif str(_["status_code"]).startswith('3'):
+                    status = colorama.Fore.YELLOW
+                elif str(_["status_code"]).startswith('4'):
+                    status = colorama.Fore.RED
+                elif str(_["status_code"]).startswith('5'):
+                    status = colorama.Fore.MAGENTA
+                else:
+                    status = ""
+                status += '(%s)' % (str(_["status_code"]))
+                print(_["url"] + ' %s | (Content-Length: %s)'
+                      % (status, str(_["content_length"])))
+        print('\n' + symbols.info + ' Finished performing scan.')
+
+    def host_is_not_responding(self, url):
+        if self.console_output_check() == 1:
+            return(1)
+        print(symbols.error + ' Host ' +
+              '[%s]' % (URLWork().url_handler(url)[1]) +
+              ' does not seem to be responding as expected.')
+        print(symbols.info + ' Skipping...')
+
+
+def test_url(url,
+             dvcs_test=False,
+             testing_level=5,
+             use_content_length_checks=True,
+             use_status_code_checks=True,
+             excluded_status_codes=[],
+             invalid_content_length_offset=50,
+             force_initial_content_length=None,
+             forced_initial_content_length=None,
+             proxy=None,
+             proxy_cred=None,
+             custom_user_agent=None,
+             cookie=None,
+             host_header=None,
+             http_headers=None,
+             random_user_agent=False,
+             timeout=None,
+             notext=False,
+             enable_debug=False,
+             max_threads=10,
+             request_rate_throttling=30,
+             testedjar=None,
+             findings_queue=None):
+    """
+    This function performs BFA testing on a single URL.
+
+    Returns a list of findings.
+    Returns int > 0 if an exception occured.
+    """
+
+    testedjar = queue.Queue() if not testedjar else testedjar
+    findings_queue = queue.Queue() if not findings_queue else findings_queue
+
+    current_scan_queue = queue.Queue()
+    current_findings_queue = queue.Queue()
+
+    generated_urls = generate_bfa_urls(
+        url,
+        testing_level=testing_level,
+        dvcs_test=dvcs_test)
+
+    for url in generated_urls:
+        current_scan_queue.put(url)
+
+    init_req = RequestsHandler().initial_request(
+        url,
+        force_initial_content_length=force_initial_content_length,
+        proxy=proxy,
+        proxy_cred=proxy_cred,
+        custom_user_agent=custom_user_agent,
+        cookie=cookie,
+        host_header=host_header,
+        http_headers=http_headers,
+        random_user_agent=random_user_agent,
+        timeout=timeout,
+        notext=notext,
+        enable_debug=enable_debug)
+
+    if (None in init_req):
+        ConsoleOutput(notext=notext).host_is_not_responding(url)
+        return(1)
+
+    init_req_content_length = init_req[1]
+
+    if ((use_content_length_checks is True) and
+       (force_initial_content_length is True)):
+        init_req_content_length = forced_initial_content_length
+
+    if use_content_length_checks is True:
+        cl_calc = VerifyResponse().calculate_valid_content_length(
+            init_req_content_length,
+            invalid_content_length_offset)
+    else:
+        cl_calc = (0, 0)
+
+    kwargs = {"use_content_length_checks": use_content_length_checks,
+              "use_status_code_checks": use_status_code_checks,
+              "excluded_status_codes": excluded_status_codes,
+              "initial_content_length_min": cl_calc[0],
+              "initial_content_length_max": cl_calc[1],
+              "proxy": proxy,
+              "proxy_cred": proxy_cred,
+              "custom_user_agent": custom_user_agent,
+              "cookie": cookie,
+              "host_header": host_header,
+              "http_headers": http_headers,
+              "random_user_agent": random_user_agent,
+              "timeout": timeout,
+              "notext": notext,
+              "findings_queue": current_findings_queue}
+
+    threads_state = []
+
+    # Do request rate throttling
+    i = queue.Queue()
+
+    def counter_reset(i):
+        while True:
+            time.sleep(1)
+            i.queue.clear()
+    try:
+        t = threading.Thread(target=counter_reset, args=(i,))
+        t.daemon = True
+        t.start()
+    except KeyboardInterrupt:
+        t.join()
+
+    while current_scan_queue.empty() is False:
+
+        if threading.active_count() < (int(max_threads) + 2):
+            # +2 is made for the following:
+            #   - The main thread.
+            #   - A thread doing counter resetting.
+            if len(i.queue) > request_rate_throttling:
+                continue
+            i.put(None)
+            url = current_scan_queue.get()
+            if (url in list(testedjar.queue)):
+                continue
+
+            testedjar.put(url)
+            ConsoleOutput(notext=notext).testing_url_message(url)
+            t = threading.Thread(target=request_and_verify_response,
+                                 args=(url,),
+                                 kwargs=kwargs)
+            t.daemon = True
+            t.start()
+            threads_state.append(t)
+        else:
+            time.sleep(0.5)
+    for t in threads_state:
+        t.join()
+
+    current_findings = list(current_findings_queue.queue)
+    for _ in current_findings:
+        if _["url"] not in findings_queue.queue:
+            findings_queue.put(_)
+    return(current_findings)
+
+
+def main():
+    # Makes Colorama work on Windows
+    colorama.init(autoreset=True)
+
+    if ('--no-text' not in sys.argv):
+
+        if (('-h' in sys.argv) or ('--help' in sys.argv) or
+                ('-hh' in sys.argv) or (len(sys.argv) <= 1) or
+                ('-help' in sys.argv) or ('--h' in sys.argv)):
+            print(logo())
+            print(instructions())
+            exit(0)
+        else:
+            print(logo())
+
+    if ('-V' in sys.argv) or ('--version' in sys.argv):
+        print(version())
+        exit(0)
+
+    if ('--issue' in sys.argv):
+        webbrowser.open('https://github.com/mazen160/bfac/issues/new')
+        print(symbols.info + ' Opening GitHub repo.')
+        exit(0)
+
+    # Handling arguments (command-line use)
+    parser = argparse.ArgumentParser()
+    # Target Options
+    parser.add_argument("-u", "--url",
+                        dest="url",
+                        help="Check a single URL.",
+                        action='store')
+    parser.add_argument("-L", "--list",
+                        dest="usedlist",
+                        help="Check a list of URLs.",
+                        action='store')
+    parser.add_argument("--stdin",
+                        dest="use_stdin",
+                        help="Check URLs from STDIN input.",
+                        action='store_true')
+    # Testing Options
+    parser.add_argument("-level", "--level",
+                        dest="testing_level",
+                        help="Set testing level [1-5]\
+                        (default: 5).",
+                        action='store',
+                        default=5)
+    parser.add_argument("--dvcs-test",
+                        dest="dvcs_test",
+                        help="Perform DVCS testing only,\
+                        which is available by default on Level 5.",
+                        action='store_true')
+    parser.add_argument("--threads",
+                        dest="max_threads",
+                        help="thread workers to use (default: 10).",
+                        action='store',
+                        default=10)
+    parser.add_argument("--request-rate-throttling",
+                        dest="request_rate_throttling",
+                        help="request rate throttling per second\
+                             (default: 30)",
+                        action="store",
+                        default=30)
+    # Artifacts Detection Options
+    parser.add_argument("--invalid-content-length",
+                        dest="invalid_content_length",
+                        help="Manually specify the invalid\
+                        Content-Length, instead of performing\
+                        this check automatically.",
+                        action='store')
+    parser.add_argument("--invalid-content-length-offset",
+                        dest="invalid_content_length_offset",
+                        help="Manually specify the Content-Length\
+                        offset for invalid pages. (default: 50)",
+                        action='store',
+                        default=50)
+    parser.add_argument("--technique", "--detection-technique",
+                        dest="detection_technique",
+                        help="Technique to verify the availability\
+                        of the file. (Options: status_code,\
+                        content_length,all) (default: all)",
+                        action='store',
+                        default='all')
+    parser.add_argument("-xsc", "--exclude-status-codes",
+                        dest="exclude_status_codes",
+                        help="Specify status codes to exclude,\
+                        separated by commas.",
+                        action='store',
+                        default=[])
+    # Output-Related Options
+    parser.add_argument("-o", "--output",
+                        dest='output_file',
+                        help="Save identified URLs into a file.",
+                        action='store')
+    parser.add_argument("--verbose-output",
+                        dest='verbose_output_file',
+                        help="Save identified URLs, with \
+                        status-codes and content-length into a file.",
+                        action='store')
+
+    parser.add_argument("--json-output",
+                        dest='json_output',
+                        help="Save findings in JSON file.",
+                        action='store')
+    parser.add_argument("--csv-output",
+                        dest='csv_output',
+                        help="Save findings in CSV file.",
+                        action='store')
+    # Request-Related Options
+    parser.add_argument("-ua", "--user-agent",
+                        dest='user_agent',
+                        help="HTTP User-Agent header value.",
+                        action='store')
+    parser.add_argument("-ra", "--random-agent", "--random-agents",
+                        dest='random_agent',
+                        help="Use random User-Agents.",
+                        action='store_true')
+    parser.add_argument("--cookie",
+                        dest='cookie',
+                        help="HTTP Cookie header value.",
+                        action='store')
+    parser.add_argument("--host",
+                        dest='host',
+                        help="HTTP Host header value.",
+                        action='store')
+    parser.add_argument("--headers",
+                        dest='headers',
+                        help="Extra headers\
+                        (e.g. \"Accept-Language: fr\\n\
+                        ETag: 123\")",
+                        action='store')
+    parser.add_argument("--proxy",
+                        dest='proxy',
+                        help="Use a proxy\
+                        on testing.",
+                        action='store')
+    parser.add_argument("--proxy-cred",
+                        dest='proxy_cred',
+                        help="Proxy authentication credentials\
+                        (name:password).",
+                        action='store')
+    parser.add_argument("--timeout",
+                        dest='timeout',
+                        help="HTTP Request timeout by seconds.\
+                        (default: 5)",
+                        action='store',
+                        default=5)
+    # Other Options
+    parser.add_argument("--no-text",
+                        dest='notext',
+                        help="Print and write a clean output\
+                        with results ony.",
+                        action='store_true')
+    parser.add_argument("--debug",
+                        dest='enable_debug',
+                        help="Enable debugging.",
+                        action='store_true',
+                        default=False)
+    parser.add_argument("--issue",
+                        dest='report_issue',
+                        help="Report an issue on GitHub.",
+                        action='store_true')
+    parser.add_argument("-V", "--version",
+                        dest='show_version',
+                        help="Show current version and exit.",
+                        action='store_true')
+
+    args = parser.parse_args()
+
+    # Handling input from argparse (Command-line use).
+    url = args.url if args.url else None
+    usedlist = args.usedlist if args.usedlist else None
+    use_stdin = args.use_stdin if args.use_stdin else None
+    testing_level = args.testing_level if args.testing_level else None
+    dvcs_test = args.dvcs_test if args.dvcs_test else None
+    max_threads = int(args.max_threads) if args.max_threads else None
+
+    # Used if-statements on multiple lines to not break PEP8-E501
+    if args.request_rate_throttling:
+        request_rate_throttling = int(args.request_rate_throttling)
+    else:
+        request_rate_throttling = None
+    if args.invalid_content_length:
+        invalid_content_length = args.invalid_content_length
+    else:
+        invalid_content_length = None
+    if args.invalid_content_length_offset:
+        invalid_content_length_offset = args.invalid_content_length_offset
+    else:
+        invalid_content_length_offset = None
+    if args.detection_technique:
+        detection_technique = args.detection_technique
+    else:
+        detection_technique = None
+    if args.exclude_status_codes:
+        exclude_status_codes = args.exclude_status_codes
+    else:
+        exclude_status_codes = None
+
+    output_file = args.output_file if args.output_file else None
+
+    if args.verbose_output_file:
+        verbose_output_file = args.verbose_output_file
+    else:
+        verbose_output_file = None
+
+    json_output = args.json_output if args.json_output else None
+    csv_output = args.csv_output if args.csv_output else None
+    user_agent = args.user_agent if args.user_agent else None
+    random_agent = args.random_agent if args.random_agent else None
+    cookie = args.cookie if args.cookie else None
+    headers = args.headers if args.headers else None
+    proxy = args.proxy if args.proxy else None
+    host = args.host if args.host else None
+    proxy_cred = args.proxy_cred if args.proxy_cred else None
+    timeout = args.timeout if args.timeout else None
+    notext = args.notext if args.notext else None
+    enable_debug = args.enable_debug if args.enable_debug else False
+
+    # Check if URL or List Input is used.
+    if (url is None) and (usedlist is None) and (use_stdin is None):
+        e = symbols.error + \
+            ' Error: Either a URL or a List should be supplied.'
+        print(str(e))
+        print('\nExiting...')
+        exit(1)
+
+    # Check if requested level is not within levels
+    available_levels = ['1', '2', '3', '4', '5']
+    if (str(testing_level) not in available_levels):
+        e = symbols.error + ' Error: Chosen level is invalid.'
+        print(str(e))
+        print('\nExiting...')
+        exit(1)
+
+    # Check Verify File Availability input:
+    detection_techniques = ['status_code',
+                            'content_length',
+                            'all']
+    if (detection_technique not in detection_techniques):
+        e = symbols.error + \
+            ' Error: Entered Verify File Availability option is invalid.'
+        print(str(e))
+        print('\nExiting...')
+        exit(1)
+
+    # Initializing output file,
+    # and checking if we have write access to file.
+    if (output_file):
+        try:
+            open(output_file, 'a').close()
+        except Exception as e:
+            print(symbols.error +
+                  ' Error: There is an error in writing output.')
+            exception_handler('Error: ', str(e))
+            print('\nExiting...')
+            exit(1)
+    if (verbose_output_file):
+        try:
+            open(verbose_output_file, 'a').close()
+        except Exception as e:
+            print(symbols.error +
+                  ' Error: There is an error in writing output.')
+            exception_handler('Error: ', str(e))
+            print('\nExiting...')
+            exit(1)
+    if (json_output):
+        try:
+            open(json_output, 'a').close()
+        except Exception as e:
+            print(symbols.error +
+                  ' Error: There is an error in writing output.')
+            exception_handler('Error: ', str(e))
+            print('\nExiting...')
+            exit(1)
+    if (csv_output):
+        try:
+            open(csv_output, 'a').close()
+        except Exception as e:
+            print(symbols.error +
+                  ' Error: There is an error in writing output.')
+            exception_handler('Error: ', str(e))
+            print('\nExiting...')
+            exit(1)
+
+    # Parse status_codes
+    if (isinstance(exclude_status_codes, str) is True):
+        exclude_status_codes = exclude_status_codes.replace(' ', '')
+        exclude_status_codes = exclude_status_codes.split(',')
+    # Checking and validating excluded status-codes input.
+    if ((exclude_status_codes is None) or
+            (exclude_status_codes == '')):
+        exclude_status_codes = []
+    for exclude_status_code in exclude_status_codes:
+        if str.isdigit(str(exclude_status_code)) is False:
+            e = symbols.error + \
+                ' Error: Invalid provided excluded status code.'
+            print(str(e))
+            exit(1)
+
+    if (detection_technique == 'all'):
+        use_status_code_checks = True
+        use_content_length_checks = True
+    if (detection_technique == 'content_length'):
+        use_status_code_checks = False
+        use_content_length_checks = True
+    if (detection_technique == 'status_code'):
+        use_status_code_checks = True
+        use_content_length_checks = False
+    if (invalid_content_length is not None):
+        force_initial_content_length = True
+        forced_initial_content_length = invalid_content_length
+    else:
+        force_initial_content_length = False
+        forced_initial_content_length = None
+
+    http_headers_list = []
+    if headers:
+        extra_headers_handler = headers.replace('\r', '')
+        headers_list = extra_headers_handler.split('\\n')
+        for _ in headers_list:
+            if (len(_.split(':')) != 2):
+                pass
+            else:
+                header = _.split(':')[0]
+                header_value = _.split(':')[1]
+
+                header_value = list(header_value)
+                # Need to check if first element is \x20
+                # because of an error shown when requesting.
+                if (header_value[0] == ' '):
+                    header_value[0] = ''
+                    header_value = ''.join(header_value)
+                    add_header = {str(header): str(header_value)}
+                    http_headers_list.append(add_header)
+
+    URLs_list = []
+    if url:
+        URLs_list.append(url)
+    if (usedlist):
+        try:
+            f_open = open(usedlist, 'r').readlines()
+        except Exception as e:
+            message = symbols.error + ' Unable to use list [%s].' % (usedlist)
+            exception_handler(message, str(e))
+            print('\nExiting...')
+            exit(1)
+        for _ in f_open:
+            _ = _.replace('\r', '').replace('\n', '')
+            URLs_list.append(_)
+    if (use_stdin):
+        stdin_input = sys.stdin.readlines()
+        for _ in stdin_input:
+            _ = _.replace('\r', '').replace('\n', '')
+            URLs_list.append(_)
+    URLs_list = list(set(URLs_list))
+
+    testedjar = queue.Queue()
+    findings_queue = queue.Queue()
+
+    for url in URLs_list:
+        ConsoleOutput(notext=notext).print_base_url(url)
+        test_url(
+            url,
+            dvcs_test=dvcs_test,
+            testing_level=testing_level,
+            use_content_length_checks=use_content_length_checks,
+            use_status_code_checks=use_status_code_checks,
+            excluded_status_codes=exclude_status_codes,
+            invalid_content_length_offset=invalid_content_length_offset,
+            force_initial_content_length=force_initial_content_length,
+            forced_initial_content_length=forced_initial_content_length,
+            proxy=proxy,
+            proxy_cred=proxy_cred,
+            custom_user_agent=user_agent,
+            cookie=cookie,
+            host_header=host,
+            http_headers=http_headers_list,
+            random_user_agent=random_agent,
+            timeout=timeout,
+            notext=notext,
+            enable_debug=enable_debug,
+            max_threads=max_threads,
+            request_rate_throttling=request_rate_throttling,
+            testedjar=testedjar,
+            findings_queue=findings_queue)
+
+    if (output_file):
+        OutputResults(notext=notext).save_in_simple_txt(findings_queue.queue,
+                                                        output_file)
+    if (verbose_output_file):
+        OutputResults(notext=notext).save_in_verbose_txt(findings_queue.queue,
+                                                         verbose_output_file)
+    if (json_output):
+        OutputResults(notext=notext).save_in_json_file(findings_queue.queue,
+                                                       json_output)
+    if (csv_output):
+        OutputResults(notext=notext).save_in_csv_file(findings_queue.queue,
+                                                      csv_output)
+
+    ConsoleOutput(notext=notext).message_with_all_findings(
+        findings_queue.queue
+    )
+
+
+if (__name__ == '__main__'):
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('\n' + symbols.info + ' KeyboardInterrupt Detected.')
+        print('\nExiting...')
+        os._exit(1)
+
+# *** END *** #

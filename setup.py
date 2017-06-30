@@ -10,22 +10,22 @@
 #   Mazin Ahmed <Mazin AT MazinAhmed DOT net>
 # *******************************************************************
 
-from setuptools import setup, Extension
+from setuptools import setup, find_packages
 
 setup(
     name='bfac',
-    packages=['bfac'],
-    version='1.2',
-    scripts=['bfac/bfac'],
-    description="An automated tool that checks for backup artifacts " +
-                " that may disclose the web-application's" +
-                " source code.",
-    long_description=open('README.md').read(),
+    packages=find_packages(),
+    version='1.3',
+    scripts=['bfac'],
+    description="Advanced Backup-File Artifacts Testing for Web-Applications",
+    long_description="An automated tool that checks for backup artifacts " +
+                     "that may disclose the web-application's" +
+                     " source code.",
     author='Mazin Ahmed',
     author_email='mazin@mazinahmed.net',
     url='https://github.com/mazen160/bfac',
     keywords=['backup', 'artifacts', 'checker', 'web scanner',
               'web vulnerability scanner', 'bfac'],
-    install_requires=['argparse', 'requests'],
+    install_requires=['requests', 'colorama'],
     license='GPL-3.0'
 )
