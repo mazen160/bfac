@@ -14,7 +14,8 @@ Contributors (alphabetical-order):-
 
 * Christian Folini (@ChrFolini)
 * Ed (@EdOverflow)
+* Justin Kennedy (@jstnkndy)
 * Omar Kurt (@omarkurt)
- 
+
 
 Thank you for making BFAC a better project for everyone!

@@ -26,6 +26,6 @@ setup(
     url='https://github.com/mazen160/bfac',
     keywords=['backup', 'artifacts', 'checker', 'web scanner',
               'web vulnerability scanner', 'bfac'],
-    install_requires=['requests', 'colorama'],
+    install_requires=['colorama', 'requests', 'requests[socks]'],
     license='GPL-3.0'
 )

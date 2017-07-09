@@ -298,10 +298,13 @@ class RequestsHandler:
             if proxy is not None:
                 proxy = str(proxy)
                 proxy_scheme_original = proxy.split(':')[0].lower()
-                # requests module is buggy when it comes to proxying.
-                # We will use the default proxy_scheme as "http"
-                # for http and socks4/5. This is the only easy way.
+                if proxy_scheme_original == "socks":
+                    proxy = proxy.replace("socks://", "socks5://")
+
                 proxy_scheme = 'http'
+
+                if link.lower().split("://")[0] == 'https':
+                    proxy_scheme = 'https'
 
                 if (proxy_cred is not None):
                     username = str(str(proxy_cred).split(':')[0])
