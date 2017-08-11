@@ -14,6 +14,7 @@ Contributors (alphabetical-order):-
 
 * Christian Folini (@ChrFolini)
 * Ed (@EdOverflow)
+* James Kettle (@albinowax)
 * Justin Kennedy (@jstnkndy)
 * Omar Kurt (@omarkurt)
 
