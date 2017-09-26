@@ -646,7 +646,9 @@ def generate_bfa_urls(url,
         full_path + filename_without_ext + '.bak.sql',
         full_path + filename_without_ext + '.bak.sql.gz',
         full_path + filename_without_ext + '.bak.sql.bz2',
-        full_path + filename_without_ext + '.bak.sql.tar.gz'
+        full_path + filename_without_ext + '.bak.sql.tar.gz',
+        site + file_path + '.',  # CVE-2017-12616
+        site + file_path + '::$DATA'  # CVE-2017-12616
     ]
 
     # LEVEL 5
