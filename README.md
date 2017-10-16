@@ -2,7 +2,7 @@ BFAC
 ----
 *Advanced Backup-File Artifacts Testing for Web-Applications*
 
-![BFAC](https://www.dropbox.com/s/laiho8j7nazg60e/BFAC-banner.png?dl=1)
+![BFAC](https://raw.githubusercontent.com/mazen160/public/master/static/images/BFAC-banner.png)
 
 BFAC (Backup File Artifacts Checker) is an automated tool that checks for backup artifacts that may disclose the web-application's source code. The artifacts can also lead to leakage of sensitive information, such as passwords, directory structure, etc.
 
