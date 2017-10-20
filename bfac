@@ -1119,26 +1119,29 @@ class ConsoleOutput:
             return(1)
 
     def erase_line(self):
-        if platform.system() == 'Windows':
-            sys.stdout.write("\b" * 4096)
-        else:
-            sys.stdout.write('\033[1K')
-            sys.stdout.write('\033[0G')
+        with threading.Lock():
+            if platform.system() == 'Windows':
+                sys.stdout.write("\b" * 4096)
+            else:
+                sys.stdout.write('\033[1K')
+                sys.stdout.write('\033[0G')
 
     def print_base_url(self, url):
         if self.console_output_check() == 1:
             return(1)
         with threading.Lock():
             sys.stdout.write("%s URL: %s\n" % (symbols.info, url))
+            sys.stdout.flush()
 
     def testing_url_message(self,
-                            url):
+                            url,
+                            current_progress_percentage):
         if self.console_output_check() == 1:
             return(1)
         with threading.Lock():
             self.erase_line()
-            sys.stdout.flush()
-            output = ('[#] Testing:-> %s' % (url))
+            output = ('[%s] Testing:-> %s' % (
+                      (str(current_progress_percentage) + "%"), url))
             sys.stdout.write(output)
             sys.stdout.flush()
 
@@ -1150,7 +1153,8 @@ class ConsoleOutput:
             return(1)
 
         with threading.Lock():
-            sys.stdout.write(("\n" + symbols.success + " Discovered: -> {%s}" +
+            self.erase_line()
+            sys.stdout.write((symbols.success + " Discovered: -> {%s}" +
                               " (Response-Code: %s | Content-Length: %s)\n")
                              % (url, response_status_code,
                                 content_length))
@@ -1166,7 +1170,10 @@ class ConsoleOutput:
                                   findings_list):
         if self.console_output_check() == 1:
             return(1)
-        print('\n')
+
+        self.erase_line()
+        sys.stdout.write("\n")
+        sys.stdout.flush()
         print(symbols.info +
               '%s Findings:%s' % (colorama.Fore.CYAN,
                                   colorama.Style.RESET_ALL))
@@ -1325,7 +1332,12 @@ def test_url(url,
                 continue
 
             testedjar.put(url)
-            ConsoleOutput(notext=notext).testing_url_message(url)
+            current_progress_percentage = round(
+                float(float(len(generated_urls) - current_scan_queue.qsize()) /
+                      float(len(generated_urls))) * 100, 2)
+            ConsoleOutput(notext=notext).testing_url_message(
+                url,
+                current_progress_percentage)
             t = threading.Thread(target=request_and_verify_response,
                                  args=(url,),
                                  kwargs=kwargs)
