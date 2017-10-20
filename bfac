@@ -219,7 +219,8 @@ class RequestsHandler:
     def __init__(self):
         self.timeout = 5  # Default timeout.
 
-    def proxy_handler(self, link, proxy=None, proxy_cred=None, proxy_list=None):
+    def proxy_handler(self, link, proxy=None,
+                      proxy_cred=None, proxy_list=None):
         if proxy_list is not None:
             chosen_proxy = random.choice(proxy_list)
         elif proxy is not None:
@@ -237,15 +238,14 @@ class RequestsHandler:
         if (proxy_cred is not None):
             username = str(str(proxy_cred).split(':')[0])
             password = str(str(proxy_cred).split(':')[1])
-            replace_original_start_with = (
-            str(proxy_scheme_original) +
-            '://' + str(username) +
-            ':' +
-            str(password) +
-            str('@'))
+            replace_original_start_with = (str(proxy_scheme_original) +
+                                           '://' + str(username) +
+                                           ':' +
+                                           str(password) +
+                                           str('@'))
             proxy_url = chosen_proxy.replace(
-            str(proxy_scheme_original) + '://',
-            replace_original_start_with)
+                str(proxy_scheme_original) + '://',
+                replace_original_start_with)
 
         proxy_dict = {proxy_scheme: proxy_url}
         return(proxy_dict)
@@ -302,7 +302,7 @@ class RequestsHandler:
     def requester(self, link, proxy=None, proxy_cred=None, proxy_list=None,
                   custom_user_agent=None, cookie=None,
                   host_header=None, http_headers=None,
-                  random_user_agent=False,custom_user_agent_list=None,
+                  random_user_agent=False, custom_user_agent_list=None,
                   timeout=None, notext=False, enable_debug=False):
 
         if timeout is None:
@@ -312,9 +312,11 @@ class RequestsHandler:
             if custom_user_agent is not None:
                 user_agent = custom_user_agent
             else:
-                if (random_user_agent is True) or (custom_user_agent_list is not None):
-                    user_agent = self.ua_handler(use_random_agent=random_user_agent,
-                                                 custom_user_agent_list=custom_user_agent_list)
+                if ((random_user_agent is True) or
+                   (custom_user_agent_list is not None)):
+                    user_agent = self.ua_handler(
+                        use_random_agent=random_user_agent,
+                        custom_user_agent_list=custom_user_agent_list)
                 else:
                     # Use BFAC default UA.
                     user_agent = self.ua_handler(use_random_agent=False)
@@ -1086,9 +1088,6 @@ class OutputResults:
                                     quotechar='"',
                                     quoting=csv.QUOTE_MINIMAL)
             for _ in findings_list:
-                url = _["url"]
-                status_code = _["status_code"]
-                content_length = _["content_length"]
                 csv_writer.writerow([_["url"],
                                     _["status_code"],
                                     _["content_length"]])
@@ -1673,9 +1672,7 @@ def main():
         force_initial_content_length = False
         forced_initial_content_length = None
 
-
     if custom_ua_file:
-        #custom_user_agent_list = custom_user_agent_list
         try:
             ua_list = open(custom_ua_file, "r").readlines()
         except Exception as e:
@@ -1690,15 +1687,14 @@ def main():
 
     if proxy_list_file:
         try:
-            proxy_list = open(proxy_list_file, "r").readlines()
+            proxy_list = open(proxy_list_file, "r").read().replace("\r", "")
+            proxy_list = proxy_list.split("\n")
         except Exception as e:
             print(symbols.error + " Error reading proxy-list file.")
             exception_handler('Error: ', str(e))
             exit(1)
-        proxy_list = [_.replace("\r", "").replace("\n", "") for _ in proxy_list]
     else:
         proxy_list = None
-
 
     http_headers_list = []
     if headers:
