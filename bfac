@@ -158,6 +158,7 @@ def instructions():
 -ua, --user-agent USER_AGENT
                             HTTP User-Agent header value.
 -ra, --random-agent         Use random User-Agents.
+--user-agents-file          Use a User-Agents file.
 --cookie COOKIE             HTTP Cookie header value.
 --host HOST                 HTTP Host header value.
 --headers HEADERS           Extra headers\
@@ -165,6 +166,7 @@ def instructions():
 --proxy PROXY               Use a proxy on testing.
 --proxy-cred PROXY_CRED     Proxy authentication credentials\
  (name:password).
+--proxy-file PROXY_FILE     Use a proxy list file.
 --timeout TIMEOUT           HTTP Request timeout by seconds.\
  (default: 5)
 
@@ -217,13 +219,46 @@ class RequestsHandler:
     def __init__(self):
         self.timeout = 5  # Default timeout.
 
-    def ua_handler(self, use_random_agent=False):
-        if use_random_agent is False:
+    def proxy_handler(self, link, proxy=None, proxy_cred=None, proxy_list=None):
+        if proxy_list is not None:
+            chosen_proxy = random.choice(proxy_list)
+        elif proxy is not None:
+            chosen_proxy = proxy
+
+        proxy_scheme_original = chosen_proxy.split(':')[0].lower()
+        proxy_scheme = 'http'
+        if proxy_scheme_original == "socks":
+            chosen_proxy = chosen_proxy.replace("socks://", "socks5://")
+
+        if link.lower().split("://")[0] == 'https':
+            proxy_scheme = 'https'
+
+        proxy_url = chosen_proxy
+        if (proxy_cred is not None):
+            username = str(str(proxy_cred).split(':')[0])
+            password = str(str(proxy_cred).split(':')[1])
+            replace_original_start_with = (
+            str(proxy_scheme_original) +
+            '://' + str(username) +
+            ':' +
+            str(password) +
+            str('@'))
+            proxy_url = chosen_proxy.replace(
+            str(proxy_scheme_original) + '://',
+            replace_original_start_with)
+
+        proxy_dict = {proxy_scheme: proxy_url}
+        return(proxy_dict)
+
+    def ua_handler(self,
+                   custom_user_agent_list=None,
+                   use_random_agent=False):
+        if (use_random_agent is False) and (custom_user_agent_list is None):
             # BFAC DEFAULT UA
             chosen_agent = 'BFAC ' + str(version()) + \
                 ' (https://github.com/mazen160/bfac)'
 
-        if use_random_agent is True:
+        if (use_random_agent is True) or (custom_user_agent_list is not None):
             # List of random User-Agents.
             agents = [
                 "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:51.0) " +
@@ -258,15 +293,17 @@ class RequestsHandler:
                 "Mozilla/5.0 (compatible; Googlebot/2.1; " +
                 "+http://www.google.com/bot.html)"
             ]
+            if custom_user_agent_list is not None:
+                agents = custom_user_agent_list
 
             chosen_agent = random.choice(agents)
         return(chosen_agent)
 
-    def requester(self, link, proxy=None, proxy_cred=None,
+    def requester(self, link, proxy=None, proxy_cred=None, proxy_list=None,
                   custom_user_agent=None, cookie=None,
                   host_header=None, http_headers=None,
-                  random_user_agent=False, timeout=None,
-                  notext=False, enable_debug=False):
+                  random_user_agent=False,custom_user_agent_list=None,
+                  timeout=None, notext=False, enable_debug=False):
 
         if timeout is None:
             timeout = self.timeout  # Use default timeout.
@@ -275,8 +312,9 @@ class RequestsHandler:
             if custom_user_agent is not None:
                 user_agent = custom_user_agent
             else:
-                if random_user_agent is True:
-                    user_agent = self.ua_handler(use_random_agent=True)
+                if (random_user_agent is True) or (custom_user_agent_list is not None):
+                    user_agent = self.ua_handler(use_random_agent=random_user_agent,
+                                                 custom_user_agent_list=custom_user_agent_list)
                 else:
                     # Use BFAC default UA.
                     user_agent = self.ua_handler(use_random_agent=False)
@@ -295,33 +333,15 @@ class RequestsHandler:
                 for _ in http_headers:
                     headers.update(_)
 
-            if proxy is not None:
-                proxy = str(proxy)
-                proxy_scheme_original = proxy.split(':')[0].lower()
-                if proxy_scheme_original == "socks":
-                    proxy = proxy.replace("socks://", "socks5://")
-
-                proxy_scheme = 'http'
-
-                if link.lower().split("://")[0] == 'https':
-                    proxy_scheme = 'https'
-
-                if (proxy_cred is not None):
-                    username = str(str(proxy_cred).split(':')[0])
-                    password = str(str(proxy_cred).split(':')[1])
-                    replace_original_start_with = (
-                        str(proxy_scheme_original) +
-                        '://' + str(username) +
-                        ':' +
-                        str(password) +
-                        str('@'))
-                    proxy_url = proxy.replace(
-                        str(proxy_scheme_original) + '://',
-                        replace_original_start_with)
-                else:
-                    proxy_url = str(proxy)
-                proxy_dict = {str(proxy_scheme): str(proxy_url)}
-
+            if (proxy is not None) or (proxy_list is not None):
+                if proxy:
+                    proxy_dict = self.proxy_handler(link,
+                                                    proxy=proxy,
+                                                    proxy_cred=proxy_cred)
+                if proxy_list:
+                    proxy_dict = self.proxy_handler(link,
+                                                    proxy_cred=proxy_cred,
+                                                    proxy_list=proxy_list)
                 # Establishing request with proxy.
                 req = requests.get(link,
                                    headers=headers,
@@ -388,7 +408,9 @@ class RequestsHandler:
                         forced_initial_content_length=None,
                         proxy=None,
                         proxy_cred=None,
+                        proxy_list=None,
                         custom_user_agent=None,
+                        custom_user_agent_list=None,
                         cookie=None,
                         host_header=None,
                         http_headers=None,
@@ -430,11 +452,13 @@ class RequestsHandler:
             link,
             proxy=proxy,
             proxy_cred=proxy_cred,
+            proxy_list=proxy_list,
             custom_user_agent=custom_user_agent,
             cookie=cookie,
             host_header=host_header,
             http_headers=http_headers,
             random_user_agent=random_user_agent,
+            custom_user_agent_list=custom_user_agent_list,
             timeout=timeout,
             notext=notext,
             enable_debug=enable_debug)
@@ -876,7 +900,9 @@ def request_and_verify_response(url,
                                 initial_content_length_max=None,
                                 proxy=None,
                                 proxy_cred=None,
+                                proxy_list=None,
                                 custom_user_agent=None,
+                                custom_user_agent_list=None,
                                 cookie=None,
                                 host_header=None,
                                 http_headers=None,
@@ -899,11 +925,13 @@ def request_and_verify_response(url,
         url,
         proxy=proxy,
         proxy_cred=proxy_cred,
+        proxy_list=proxy_list,
         custom_user_agent=custom_user_agent,
         cookie=cookie,
         host_header=host_header,
         http_headers=http_headers,
         random_user_agent=random_user_agent,
+        custom_user_agent_list=custom_user_agent_list,
         timeout=timeout,
         notext=notext)
 
@@ -1182,7 +1210,9 @@ def test_url(url,
              forced_initial_content_length=None,
              proxy=None,
              proxy_cred=None,
+             proxy_list=None,
              custom_user_agent=None,
+             custom_user_agent_list=None,
              cookie=None,
              host_header=None,
              http_headers=None,
@@ -1220,11 +1250,13 @@ def test_url(url,
         force_initial_content_length=force_initial_content_length,
         proxy=proxy,
         proxy_cred=proxy_cred,
+        proxy_list=proxy_list,
         custom_user_agent=custom_user_agent,
         cookie=cookie,
         host_header=host_header,
         http_headers=http_headers,
         random_user_agent=random_user_agent,
+        custom_user_agent_list=custom_user_agent_list,
         timeout=timeout,
         notext=notext,
         enable_debug=enable_debug)
@@ -1253,7 +1285,9 @@ def test_url(url,
               "initial_content_length_max": cl_calc[1],
               "proxy": proxy,
               "proxy_cred": proxy_cred,
+              "proxy_list": proxy_list,
               "custom_user_agent": custom_user_agent,
+              "custom_user_agent_list": custom_user_agent_list,
               "cookie": cookie,
               "host_header": host_header,
               "http_headers": http_headers,
@@ -1427,6 +1461,10 @@ def main():
                         dest='random_agent',
                         help="Use random User-Agents.",
                         action='store_true')
+    parser.add_argument("--user-agents-file",
+                        dest="custom_ua_file",
+                        help="Use a User-Agents file.",
+                        action='store')
     parser.add_argument("--cookie",
                         dest='cookie',
                         help="HTTP Cookie header value.",
@@ -1450,6 +1488,10 @@ def main():
                         dest='proxy_cred',
                         help="Proxy authentication credentials\
                         (name:password).",
+                        action='store')
+    parser.add_argument("--proxy-file",
+                        dest='proxy_list_file',
+                        help="Use a proxy list file.",
                         action='store')
     parser.add_argument("--timeout",
                         dest='timeout',
@@ -1520,11 +1562,16 @@ def main():
     csv_output = args.csv_output if args.csv_output else None
     user_agent = args.user_agent if args.user_agent else None
     random_agent = args.random_agent if args.random_agent else None
+    if args.custom_ua_file:
+        custom_ua_file = args.custom_ua_file
+    else:
+        custom_ua_file = None
     cookie = args.cookie if args.cookie else None
     headers = args.headers if args.headers else None
     proxy = args.proxy if args.proxy else None
-    host = args.host if args.host else None
     proxy_cred = args.proxy_cred if args.proxy_cred else None
+    proxy_list_file = args.proxy_list_file if args.proxy_list_file else None
+    host = args.host if args.host else None
     timeout = args.timeout if args.timeout else None
     notext = args.notext if args.notext else None
     enable_debug = args.enable_debug if args.enable_debug else False
@@ -1626,6 +1673,33 @@ def main():
         force_initial_content_length = False
         forced_initial_content_length = None
 
+
+    if custom_ua_file:
+        #custom_user_agent_list = custom_user_agent_list
+        try:
+            ua_list = open(custom_ua_file, "r").readlines()
+        except Exception as e:
+            print(symbols.error + " Error reading user-agents file.")
+            exception_handler('Error: ', str(e))
+            exit(1)
+        ua_list = [_.replace("\r", "").replace("\n", "") for _ in ua_list]
+        custom_user_agent_list = ua_list
+        del ua_list
+    else:
+        custom_user_agent_list = None
+
+    if proxy_list_file:
+        try:
+            proxy_list = open(proxy_list_file, "r").readlines()
+        except Exception as e:
+            print(symbols.error + " Error reading proxy-list file.")
+            exception_handler('Error: ', str(e))
+            exit(1)
+        proxy_list = [_.replace("\r", "").replace("\n", "") for _ in proxy_list]
+    else:
+        proxy_list = None
+
+
     http_headers_list = []
     if headers:
         extra_headers_handler = headers.replace('\r', '')
@@ -1684,7 +1758,9 @@ def main():
             forced_initial_content_length=forced_initial_content_length,
             proxy=proxy,
             proxy_cred=proxy_cred,
+            proxy_list=proxy_list,
             custom_user_agent=user_agent,
+            custom_user_agent_list=custom_user_agent_list,
             cookie=cookie,
             host_header=host,
             http_headers=http_headers_list,
