@@ -12,6 +12,19 @@
 
 ### Changelog:-
 
+* v1.4:
+  Additions/Features:-
+    [+] Added --proxy-file and --user-agents-file options.
+    [+] Improved console output.
+    [+] Added pattern for CVE-2017-12616.
+
+  Fixed Bugs:-
+    [*] Fixed a bug in proxying requests - Thanks Justin Kennedy @jstnkndy.
+
+  Known Bugs/Issues:-
+    None
+
+
 * v1.3:
   Additions/Features:-
     [+] BFAC now supports multithrading.

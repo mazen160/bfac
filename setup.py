@@ -15,7 +15,7 @@ from setuptools import setup, find_packages
 setup(
     name='bfac',
     packages=find_packages(),
-    version='1.3',
+    version='1.4',
     scripts=['bfac'],
     description="Advanced Backup-File Artifacts Testing for Web-Applications",
     long_description="An automated tool that checks for backup artifacts " +
