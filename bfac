@@ -435,9 +435,9 @@ class RequestsHandler:
             expected_status_code = 200
             return(expected_status_code, forced_initial_content_length)
 
-        # Obtain site and file_dir via URLWork().url_handler()
-        site = URLWork().url_handler(link)["site"]
-        file_dir = URLWork().url_handler(link)["file_dir"]
+        # Obtain site and file_dir via url_handler()
+        site = url_handler(link)["site"]
+        file_dir = url_handler(link)["file_dir"]
 
         random_ascii_charset = 'abcdefghijklmnopqrstuvwxyz0123456789'
         random_value = \
@@ -470,86 +470,77 @@ class RequestsHandler:
 
         return(initial_status_code, initial_content_length)
 
-
-class URLWork:
+def url_clean(url):
     """
-    This class is responsible for handling URLs for testing.
+    Cleans-up a URL.
     """
 
-    def url_clean(self, url):
-        """
-        Cleans-up a URL.
-        """
+    url = url.split('?')[0]
+    url = url.replace('#', '%23')
+    url = url.replace(' ', '%20')
+    return(url)
 
-        url = url.split('?')[0]
-        url = url.replace('#', '%23')
-        url = url.replace(' ', '%20')
-        return(url)
+def url_handler(url):
+    """
+    Parses a URL, and returns output of URL structure.
+    """
 
-    def url_handler(self, url):
-        """
-        Parses a URL, and returns output of URL structure.
-        """
+    # Assuming URL is: http://example.com/uploads/test.php
 
-        try:
-            # Assuming URL is: http://example.com/uploads/test.php
+    # Cleaning url
+    url = url_clean(url)
 
-            # Cleaning url
-            url = self.url_clean(url)
+    # Scheme: http
+    default_protocol = 'http'
+    if ('://' not in url):
+        url = str(default_protocol) + str('://') + str(url)
+    scheme = urlparse.urlparse(url).scheme
 
-            # Scheme: http
-            default_protocol = 'http'
-            if ('://' not in url):
-                url = str(default_protocol) + str('://') + str(url)
-            scheme = urlparse.urlparse(url).scheme
+    # Domain: example.com
+    domain = urlparse.urlparse(url).netloc
 
-            # Domain: example.com
-            domain = urlparse.urlparse(url).netloc
+    # Site: http://example.com
+    site = scheme + '://' + domain
 
-            # Site: http://example.com
-            site = scheme + '://' + domain
+    # FilePath: /uploads/test.php
+    file_path = urlparse.urlparse(url).path
+    if (file_path == ''):
+        file_path = '/'
 
-            # FilePath: /uploads/test.php
-            file_path = urlparse.urlparse(url).path
-            if (file_path == ''):
-                file_path = '/'
+    # Filename: test.php
+    try:
+        filename = url.split('/')[-1]
+    except IndexError:
+        filename = ''
 
-            # Filename: test.php
-            try:
-                filename = url.split('/')[-1]
-            except IndexError:
-                filename = ''
+    # File Dir: /uploads/
+    file_dir = file_path.rstrip(filename)
+    if (file_dir == ''):
+        file_dir = '/'
 
-            # File Dir: /uploads/
-            file_dir = file_path.rstrip(filename)
-            if (file_dir == ''):
-                file_dir = '/'
+    # FullPath: http://example.com/uploads/
+    full_path = site + file_dir
 
-            # FullPath: http://example.com/uploads/
-            full_path = site + file_dir
+    # File Extension: php
+    try:
+        filename_ext = filename.split('.')
+        filename_ext.pop(0)
+        filename_ext = '.'.join(filename_ext)
+    except IndexError:
+        filename_ext = ''
 
-            # File Extension: php
-            try:
-                filename_ext = filename.split('.')
-                filename_ext.pop(0)
-                filename_ext = '.'.join(filename_ext)
-            except IndexError:
-                filename_ext = ''
+    # File without Extension: test
+    try:
+        filename_without_ext = filename.split('.')[0]
+    except IndexError:
+        filename_without_ext = ''
 
-            # File without Extension: test
-            try:
-                filename_without_ext = filename.split('.')[0]
-            except IndexError:
-                filename_without_ext = ''
-        except IndexError:
-            pass
-
-        output = {"scheme": scheme, "domain": domain,
-                 "site": site, "file_path": file_path,
-                 "filename": filename, "file_dir": file_dir,
-                 "full_path": full_path, "filename_ext": filename_without_ext,
-                 "filename_without_ext": filename_without_ext}
-        return(output)
+    output = {"scheme": scheme, "domain": domain,
+              "site": site, "file_path": file_path,
+              "filename": filename, "file_dir": file_dir,
+              "full_path": full_path, "filename_ext": filename_without_ext,
+              "filename_without_ext": filename_without_ext}
+    return(output)
 
 
 def generate_bfa_urls(url,
@@ -560,7 +551,7 @@ def generate_bfa_urls(url,
     Returns a list of BFA testing URLs of given URL.
     """
 
-    url_parsed = URLWork().url_handler(url)
+    url_parsed = url_handler(url)
 
     (scheme, domain, site, file_path, filename,
      file_dir, full_path, filename_ext,
@@ -1222,7 +1213,7 @@ class ConsoleOutput:
         if self.console_output_check() == 1:
             return(1)
         print(symbols.error + ' Host ' +
-              '[%s]' % (URLWork().url_handler(url)["domain"]) +
+              '[%s]' % (url_handler(url)["domain"]) +
               ' does not seem to be responding as expected.')
         print(symbols.info + ' Skipping...')
 
