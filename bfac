@@ -538,7 +538,7 @@ def url_handler(url):
     output = {"scheme": scheme, "domain": domain,
               "site": site, "file_path": file_path,
               "filename": filename, "file_dir": file_dir,
-              "full_path": full_path, "filename_ext": filename_without_ext,
+              "full_path": full_path, "filename_ext": filename_ext,
               "filename_without_ext": filename_without_ext}
     return(output)
 
