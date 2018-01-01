@@ -436,8 +436,8 @@ class RequestsHandler:
             return(expected_status_code, forced_initial_content_length)
 
         # Obtain site and file_dir via URLWork().url_handler()
-        site = URLWork().url_handler(link)[2]
-        file_dir = URLWork().url_handler(link)[5]
+        site = URLWork().url_handler(link)["site"]
+        file_dir = URLWork().url_handler(link)["file_dir"]
 
         random_ascii_charset = 'abcdefghijklmnopqrstuvwxyz0123456789'
         random_value = \
@@ -544,8 +544,12 @@ class URLWork:
         except IndexError:
             pass
 
-        return(scheme, domain, site, file_path, filename, file_dir,
-               full_path, filename_ext, filename_without_ext)
+        output = {"scheme": scheme, "domain": domain,
+                 "site": site, "file_path": file_path,
+                 "filename": filename, "file_dir": file_dir,
+                 "full_path": full_path, "filename_ext": filename_without_ext,
+                 "filename_without_ext": filename_without_ext}
+        return(output)
 
 
 def generate_bfa_urls(url,
@@ -556,9 +560,19 @@ def generate_bfa_urls(url,
     Returns a list of BFA testing URLs of given URL.
     """
 
+    url_parsed = URLWork().url_handler(url)
+
     (scheme, domain, site, file_path, filename,
      file_dir, full_path, filename_ext,
-     filename_without_ext) = URLWork().url_handler(url)
+     filename_without_ext) = (url_parsed["scheme"],
+                             url_parsed["domain"],
+                             url_parsed["site"],
+                             url_parsed["file_path"],
+                             url_parsed["filename"],
+                             url_parsed["file_dir"],
+                             url_parsed["full_path"],
+                             url_parsed["filename_ext"],
+                             url_parsed["filename_without_ext"])
 
     # LEVEL 1
     backup_testing_level1 = [
@@ -1208,7 +1222,7 @@ class ConsoleOutput:
         if self.console_output_check() == 1:
             return(1)
         print(symbols.error + ' Host ' +
-              '[%s]' % (URLWork().url_handler(url)[1]) +
+              '[%s]' % (URLWork().url_handler(url)["domain"]) +
               ' does not seem to be responding as expected.')
         print(symbols.info + ' Skipping...')
 
