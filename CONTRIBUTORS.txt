@@ -16,6 +16,7 @@ Contributors (alphabetical-order):-
 * Ed (@EdOverflow)
 * James Kettle (@albinowax)
 * Justin Kennedy (@jstnkndy)
+* Liam Somerville (@leesoh)
 * Omar Kurt (@omarkurt)
 
 
