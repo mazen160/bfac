@@ -1322,13 +1322,15 @@ def test_url(url,
     i = queue.Queue()
 
     def counter_reset(i):
-        while True:
+        while current_scan_queue.empty() is False:
             time.sleep(1)
             i.queue.clear()
+
     try:
         t = threading.Thread(target=counter_reset, args=(i,))
         t.daemon = True
         t.start()
+        threads_state.append(t)
     except KeyboardInterrupt:
         t.join()
 
