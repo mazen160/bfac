@@ -470,6 +470,7 @@ class RequestsHandler:
 
         return(initial_status_code, initial_content_length)
 
+
 def url_clean(url):
     """
     Cleans-up a URL.
@@ -479,6 +480,7 @@ def url_clean(url):
     url = url.replace('#', '%23')
     url = url.replace(' ', '%20')
     return(url)
+
 
 def url_handler(url):
     """
@@ -556,14 +558,14 @@ def generate_bfa_urls(url,
     (scheme, domain, site, file_path, filename,
      file_dir, full_path, filename_ext,
      filename_without_ext) = (url_parsed["scheme"],
-                             url_parsed["domain"],
-                             url_parsed["site"],
-                             url_parsed["file_path"],
-                             url_parsed["filename"],
-                             url_parsed["file_dir"],
-                             url_parsed["full_path"],
-                             url_parsed["filename_ext"],
-                             url_parsed["filename_without_ext"])
+                              url_parsed["domain"],
+                              url_parsed["site"],
+                              url_parsed["file_path"],
+                              url_parsed["filename"],
+                              url_parsed["file_dir"],
+                              url_parsed["full_path"],
+                              url_parsed["filename_ext"],
+                              url_parsed["filename_without_ext"])
 
     # LEVEL 1
     backup_testing_level1 = [
