@@ -126,7 +126,7 @@ def instructions():
 
   * Target Options
 -u, --url URL               Check a single URL.
--l, --list LIST             Check a list of URLs.
+-L, --list LIST             Check a list of URLs.
 --stdin                     Check URLs from STDIN input.
 
   * Testing Options
