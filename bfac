@@ -146,7 +146,7 @@ def instructions():
 --invalid-content-length-offset OFFSET
                             Manually specify the Content-Length\
  offset for invalid pages (default: 50).
---technique, --detection-technique TECNIQUE
+--technique, --detection-technique TECHNIQUE
                            Technique to verify the availability\
  of the file. (options: status_code, content_length, all)\
   (default: all)
