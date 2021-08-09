@@ -18,6 +18,7 @@ Contributors (alphabetical-order):-
 * Justin Kennedy (@jstnkndy)
 * Liam Somerville (@leesoh)
 * Omar Kurt (@omarkurt)
+* Zeecka (@zeecka_)
 
 
 Thank you for making BFAC a better project for everyone!
