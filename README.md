@@ -13,7 +13,6 @@ BFAC (Backup File Artifacts Checker) is an automated tool that checks for backup
 * Includes request rate throttling.
 * HTTP proxy support.
 * Uses multiple algorithms for automatically detecting valid and invalid pages.
-* HTTP proxy support
 * User agent randomization.
 * Batch processing.
 * Works both as a command-line tool and Python module.
