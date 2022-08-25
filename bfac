@@ -25,6 +25,8 @@ import platform
 import threading
 import webbrowser
 import colorama
+import urllib.parse
+
 try:
     import Queue as queue
 except ImportError:
@@ -476,9 +478,7 @@ def url_clean(url):
     Cleans-up a URL.
     """
 
-    url = url.split('?')[0]
-    url = url.replace('#', '%23')
-    url = url.replace(' ', '%20')
+    url = urllib.parse.quote(url)
     return(url)
 
 
